@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { format } from "date-fns";
 import { ChevronDown, Filter, ShieldAlert, ArrowRight, Save } from "lucide-react";
-import { useListLeads, useGetLead, useUpdateLead } from "@workspace/api-client-react";
+import { useListLeads, useGetLead, useUpdateLead, getListLeadsQueryKey, getGetLeadQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -29,6 +29,7 @@ const ScoreRing = ({ score }: { score: number }) => {
 
 function LeadDetails({ leadId, adminHeaders }: { leadId: string; adminHeaders: Record<string, string> }) {
   const { data: lead, isLoading } = useGetLead(leadId, {
+    query: { queryKey: getGetLeadQueryKey(leadId) },
     request: { headers: adminHeaders },
   });
   const updateMutation = useUpdateLead({
@@ -154,7 +155,7 @@ export default function AdminPage() {
     },
     {
       request: { headers: adminHeaders },
-      query: { enabled: token === ADMIN_TOKEN },
+      query: { queryKey: getListLeadsQueryKey({ segment: segment === "all" ? undefined : segment, limit: 50 }), enabled: token === ADMIN_TOKEN },
     }
   );
 

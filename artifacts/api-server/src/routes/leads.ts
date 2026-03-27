@@ -98,7 +98,7 @@ router.get("/leads", requireAdmin, async (req, res) => {
 });
 
 router.get("/leads/:id", requireAdmin, async (req, res) => {
-  const { id } = req.params;
+  const id = String(req.params.id);
 
   const lead = await db.query.leadsTable.findFirst({
     where: eq(leadsTable.id, id),
@@ -176,7 +176,7 @@ router.get("/leads/:id", requireAdmin, async (req, res) => {
 });
 
 router.patch("/leads/:id", requireAdmin, async (req, res) => {
-  const { id } = req.params;
+  const id = String(req.params.id);
   const { status, notes, nextAction, converted, dealValue, assignedConsultant } = req.body as {
     status?: string;
     notes?: string;

@@ -4,6 +4,14 @@
 
 pnpm workspace monorepo using TypeScript. This project is the **SRP AI Idea-to-MVP Engine** — a pre-sales web app for Silk Road Professionals where potential clients chat with Claude AI about their software idea, receive a qualification score, provide their email, and get a generated prototype (clickable HTML or Technical Concept Summary).
 
+### Key implementation notes
+- **Cookie-based session**: `POST /api/conversations` sets `srp_session` HttpOnly cookie. `GET /api/conversations/current` resumes session from cookie. Frontend also stores in localStorage as fallback.
+- **Incremental scoring**: After each assistant message, `estimateLeadScore()` runs a heuristic (no Claude call) updating businessSignals, urgencySignals, fitSignals, engagementQuality in DB.
+- **Idle timeout nudge**: After 3 minutes of inactivity in the chat (user present, not typing), a nudge modal appears prompting email capture.
+- **Admin auth on all routes**: `/api/leads/*` and `/api/anthropic/*` both require `x-admin-token: srp-admin-2024` header or `?token=srp-admin-2024` query param.
+- **Rate limiting**: 3 conversations per IP per 24h (in-memory).
+- **Message cap**: Hard cap at 15 user messages (backend enforced), soft signal at 12 via SSE `done` event.
+
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces

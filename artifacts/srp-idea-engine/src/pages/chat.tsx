@@ -1,68 +1,132 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Send, Mail, CheckCircle2, ChevronRight, Lock } from "lucide-react";
+import { ArrowRight, Send, Mail, CheckCircle2, ChevronRight, Lock, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useStartConversation, useGetConversation, useCaptureContact, useGeneratePrototype } from "@workspace/api-client-react";
+import { useStartConversation, useGetConversation, useCaptureContact, useGeneratePrototype, getGetConversationQueryKey } from "@workspace/api-client-react";
 import { useChatStream } from "@/hooks/use-chat-stream";
 import { ChatBubble } from "@/components/chat-bubble";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 
+const IDLE_TIMEOUT_MS = 3 * 60 * 1000;
+const SESSION_KEY = "srp_session_id";
+
+async function tryResumeFromCookie(): Promise<string | null> {
+  try {
+    const res = await fetch("/api/conversations/current", {
+      credentials: "include",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.sessionId) {
+        localStorage.setItem(SESSION_KEY, data.sessionId);
+        return data.sessionId;
+      }
+    }
+  } catch {
+  }
+  return null;
+}
+
 export default function ChatPage() {
-  const [sessionId, setSessionId] = useState<string | null>(() => localStorage.getItem("srp_session_id"));
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
   const [initialInput, setInitialInput] = useState("");
   const [input, setInput] = useState("");
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [idleNudge, setIdleNudge] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [prototypeId, setPrototypeId] = useState<string | null>(null);
   const [, setLocation] = useLocation();
 
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startMutation = useStartConversation();
   const captureMutation = useCaptureContact();
   const generateMutation = useGeneratePrototype();
 
   const { data: conversation, isLoading: isLoadingConv } = useGetConversation(sessionId || "", {
-    query: { enabled: !!sessionId, retry: 1 }
+    query: { queryKey: getGetConversationQueryKey(sessionId || ""), enabled: !!sessionId, retry: 1 },
+    request: { credentials: "include" },
   });
 
   const { sendMessage, isStreaming, streamedText } = useChatStream(sessionId);
 
-  // Auto-scroll to bottom of chat
+  useEffect(() => {
+    const stored = localStorage.getItem(SESSION_KEY);
+    if (stored) {
+      setSessionId(stored);
+      setSessionLoading(false);
+    } else {
+      tryResumeFromCookie().then((id) => {
+        if (id) setSessionId(id);
+        setSessionLoading(false);
+      });
+    }
+  }, []);
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [conversation?.messages, streamedText, isStreaming]);
 
-  // Clean up invalid session
   useEffect(() => {
     if (!isLoadingConv && sessionId && !conversation) {
-      localStorage.removeItem("srp_session_id");
+      localStorage.removeItem(SESSION_KEY);
       setSessionId(null);
     }
   }, [isLoadingConv, sessionId, conversation]);
 
+  const resetIdleTimer = useCallback(() => {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    setIdleNudge(false);
+    if (sessionId && !showEmailForm && !prototypeId && !generating) {
+      const messages = conversation?.messages || [];
+      const emailCaptured = conversation?.emailCaptured;
+      if (!emailCaptured && messages.length >= 2) {
+        idleTimerRef.current = setTimeout(() => {
+          setIdleNudge(true);
+        }, IDLE_TIMEOUT_MS);
+      }
+    }
+  }, [sessionId, showEmailForm, prototypeId, generating, conversation]);
+
+  useEffect(() => {
+    resetIdleTimer();
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
+  }, [resetIdleTimer]);
+
   const messages = conversation?.messages || [];
-  const showGeneratePrompt = !conversation?.emailCaptured && messages.length >= 4 && !showEmailForm && !generating && !prototypeId;
+  const showGeneratePrompt =
+    !conversation?.emailCaptured &&
+    messages.length >= 4 &&
+    !showEmailForm &&
+    !generating &&
+    !prototypeId &&
+    !idleNudge;
 
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!initialInput.trim()) return;
 
     try {
-      const res = await startMutation.mutateAsync({ data: { source: "web", referrerUrl: window.location.href } });
-      localStorage.setItem("srp_session_id", res.sessionId);
+      const res = await startMutation.mutateAsync({
+        data: { source: "web", referrerUrl: window.location.href },
+        request: { credentials: "include" },
+      } as Parameters<typeof startMutation.mutateAsync>[0]);
+      localStorage.setItem(SESSION_KEY, res.sessionId);
       setSessionId(res.sessionId);
-      
-      // Delay slightly so query cache registers the new session before sending the stream
+
       setTimeout(() => {
         sendMessage(initialInput);
       }, 300);
@@ -76,6 +140,7 @@ export default function ChatPage() {
     if (!input.trim() || isStreaming) return;
     const text = input;
     setInput("");
+    resetIdleTimer();
     await sendMessage(text);
   };
 
@@ -85,12 +150,17 @@ export default function ChatPage() {
     const email = formData.get("email") as string;
     if (!email || !sessionId) return;
 
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    setIdleNudge(false);
     setGenerating(true);
+
     try {
       const res = await captureMutation.mutateAsync({
         sessionId,
-        data: { email }
-      });
+        data: { email },
+        request: { credentials: "include" },
+      } as Parameters<typeof captureMutation.mutateAsync>[0]);
+
       if (res.prototypeId) {
         await generateMutation.mutateAsync({ id: res.prototypeId });
         setPrototypeId(res.prototypeId);
@@ -103,6 +173,14 @@ export default function ChatPage() {
       setGenerating(false);
     }
   };
+
+  if (sessionLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!sessionId) {
     return (
@@ -117,7 +195,7 @@ export default function ChatPage() {
             <div className="w-20 h-20 mx-auto mb-8 bg-card border border-border/80 shadow-2xl shadow-primary/10 rounded-2xl flex items-center justify-center overflow-hidden">
               <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="SRP" className="w-12 h-12" />
             </div>
-            
+
             <Badge variant="outline" className="mb-6 border-primary/30 text-primary bg-primary/5 uppercase tracking-widest text-[10px] py-1.5 px-3">
               SRP Pre-Sales Engine
             </Badge>
@@ -126,7 +204,7 @@ export default function ChatPage() {
               Turn your software idea into a <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-amber-400 to-amber-200 drop-shadow-sm">visual concept</span>
               <br />— in minutes.
             </h1>
-            
+
             <p className="text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto font-light leading-relaxed">
               Chat with our AI strategist to shape your requirements. We'll instantly generate a bespoke technical summary or interactive prototype.
             </p>
@@ -175,12 +253,8 @@ export default function ChatPage() {
           </Button>
         </header>
 
-        <ScrollArea className="flex-1 p-4 md:p-6 lg:p-8">
+        <ScrollArea className="flex-1 p-4 md:p-6 lg:p-8" onMouseMove={resetIdleTimer} onKeyDown={resetIdleTimer}>
           <div className="space-y-6 pb-12">
-            {conversation?.initialMessage && (
-              <ChatBubble message={{ id: 'init', role: 'assistant', content: conversation.initialMessage }} />
-            )}
-
             {messages.map(msg => (
                <ChatBubble key={msg.id} message={msg} />
             ))}
@@ -222,7 +296,7 @@ export default function ChatPage() {
                   View Your Concept <ChevronRight className="w-5 h-5 ml-2" />
                 </Button>
               </motion.div>
-            ) : showEmailForm ? (
+            ) : showEmailForm || idleNudge ? (
               <motion.div
                 key="email"
                 initial={{ opacity: 0, y: 20 }}
@@ -231,12 +305,21 @@ export default function ChatPage() {
                 className="bg-card border border-border p-6 rounded-2xl shadow-2xl"
               >
                 <div className="flex items-start gap-4 mb-6">
-                  <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl text-primary mt-1 shadow-inner">
-                    <Mail className="w-6 h-6" />
+                  <div className={cn("p-3 border rounded-xl mt-1 shadow-inner", idleNudge ? "bg-amber-500/10 border-amber-500/20 text-amber-400" : "bg-primary/10 border-primary/20 text-primary")}>
+                    {idleNudge ? <Clock className="w-6 h-6" /> : <Mail className="w-6 h-6" />}
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-foreground">Where should we send your concept?</h3>
-                    <p className="text-sm text-muted-foreground mt-1">Enter your work email to instantly generate and receive your personalized prototype.</p>
+                    {idleNudge ? (
+                      <>
+                        <h3 className="text-lg font-bold text-foreground">Still thinking it over?</h3>
+                        <p className="text-sm text-muted-foreground mt-1">We can generate your concept now — just share your email and we'll send it right over.</p>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="text-lg font-bold text-foreground">Where should we send your concept?</h3>
+                        <p className="text-sm text-muted-foreground mt-1">Enter your work email to instantly generate and receive your personalized prototype.</p>
+                      </>
+                    )}
                   </div>
                 </div>
                 <form onSubmit={handleEmailSubmit} className="flex flex-col sm:flex-row gap-3">
@@ -252,8 +335,8 @@ export default function ChatPage() {
                   </Button>
                 </form>
                 <div className="mt-4 text-center sm:text-left">
-                  <button type="button" onClick={() => setShowEmailForm(false)} className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors">
-                    Cancel and return to chat
+                  <button type="button" onClick={() => { setShowEmailForm(false); setIdleNudge(false); resetIdleTimer(); }} className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors">
+                    Not now — keep chatting
                   </button>
                 </div>
               </motion.div>
@@ -271,10 +354,13 @@ export default function ChatPage() {
                     </Button>
                   </div>
                 )}
-                <form onSubmit={handleSend} className="relative flex items-end gap-3 bg-background border border-border rounded-2xl p-2 shadow-inner focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all">
+                <form
+                  onSubmit={handleSend}
+                  className="relative flex items-end gap-3 bg-background border border-border rounded-2xl p-2 shadow-inner focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all"
+                >
                   <Textarea
                     value={input}
-                    onChange={e => setInput(e.target.value)}
+                    onChange={e => { setInput(e.target.value); resetIdleTimer(); }}
                     onKeyDown={e => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();

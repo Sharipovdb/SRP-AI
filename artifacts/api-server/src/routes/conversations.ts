@@ -6,18 +6,74 @@ import { SRP_SYSTEM_PROMPT } from "../lib/srp-system-prompt";
 import { checkRateLimit, incrementRateLimit } from "../lib/rate-limiter";
 import { qualifyLead } from "../lib/qualification";
 import { generatePrototypeHtml } from "../lib/prototype-generator";
+import { estimateLeadScore } from "../lib/incremental-scorer";
 
 const router: IRouter = Router();
 
 const HARD_CAP_USER_MESSAGES = 15;
 const SOFT_REDIRECT_USER_MESSAGES = 12;
+const SESSION_COOKIE = "srp_session";
+const COOKIE_MAX_AGE = 24 * 60 * 60;
+
+function setSessionCookie(res: import("express").Response, sessionId: string): void {
+  res.cookie(SESSION_COOKIE, sessionId, {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: COOKIE_MAX_AGE * 1000,
+    path: "/",
+  });
+}
+
+router.get("/conversations/current", async (req, res) => {
+  const sessionId = req.cookies?.[SESSION_COOKIE] as string | undefined;
+
+  if (!sessionId) {
+    res.status(404).json({ error: "No active session" });
+    return;
+  }
+
+  const lead = await db.query.leadsTable.findFirst({
+    where: eq(leadsTable.sessionId, sessionId),
+  });
+
+  if (!lead) {
+    res.clearCookie(SESSION_COOKIE, { path: "/" });
+    res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
+  const messages = await db
+    .select()
+    .from(chatMessagesTable)
+    .where(eq(chatMessagesTable.leadId, lead.id))
+    .orderBy(chatMessagesTable.createdAt);
+
+  res.json({
+    sessionId: lead.sessionId,
+    leadId: lead.id,
+    status: lead.status,
+    messageCount: messages.length,
+    emailCaptured: !!lead.email,
+    messages: messages.map((m) => ({
+      id: m.id,
+      role: m.role,
+      content: m.content,
+      createdAt: m.createdAt,
+    })),
+  });
+});
 
 router.post("/conversations", async (req, res) => {
-  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.socket?.remoteAddress || "unknown";
+  const ip =
+    (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+    req.socket?.remoteAddress ||
+    "unknown";
 
   const rateLimitCheck = checkRateLimit(ip);
   if (!rateLimitCheck.allowed) {
-    res.status(429).json({ error: "Rate limit exceeded. You can start up to 3 conversations per day." });
+    res
+      .status(429)
+      .json({ error: "Rate limit exceeded. You can start up to 3 conversations per day." });
     return;
   }
 
@@ -38,7 +94,8 @@ router.post("/conversations", async (req, res) => {
 
   incrementRateLimit(ip);
 
-  const openingMessage = "Welcome to Silk Road Professionals. I help turn rough software ideas into visual concepts you can see and share. Tell me — what are you thinking about building?";
+  const openingMessage =
+    "Welcome to Silk Road Professionals. I help turn rough software ideas into visual concepts you can see and share. Tell me — what are you thinking about building?";
 
   await db.insert(chatMessagesTable).values({
     leadId: lead.id,
@@ -50,6 +107,8 @@ router.post("/conversations", async (req, res) => {
     .update(leadsTable)
     .set({ conversationMessageCount: 1, status: "clarifying", updatedAt: new Date() })
     .where(eq(leadsTable.id, lead.id));
+
+  setSessionCookie(res, sessionId);
 
   res.status(201).json({
     sessionId,
@@ -77,6 +136,8 @@ router.get("/conversations/:sessionId", async (req, res) => {
     .from(chatMessagesTable)
     .where(eq(chatMessagesTable.leadId, lead.id))
     .orderBy(chatMessagesTable.createdAt);
+
+  setSessionCookie(res, sessionId);
 
   res.json({
     sessionId: lead.sessionId,
@@ -123,7 +184,8 @@ router.post("/conversations/:sessionId/messages", async (req, res) => {
 
   if (userMessageCount >= HARD_CAP_USER_MESSAGES) {
     res.status(400).json({
-      error: "Conversation limit reached. Please provide your contact information to receive your concept summary.",
+      error:
+        "Conversation limit reached. Please provide your contact information to receive your concept summary.",
     });
     return;
   }
@@ -163,11 +225,14 @@ router.post("/conversations/:sessionId/messages", async (req, res) => {
         event.delta.type === "text_delta"
       ) {
         fullResponse += event.delta.text;
-        res.write(
-          `data: ${JSON.stringify({ content: event.delta.text })}\n\n`
-        );
+        res.write(`data: ${JSON.stringify({ content: event.delta.text })}\n\n`);
       }
     }
+
+    const updatedMessages = [
+      ...allMessages,
+      { role: "assistant" as const, content: fullResponse },
+    ];
 
     await db.insert(chatMessagesTable).values({
       leadId: lead.id,
@@ -175,16 +240,31 @@ router.post("/conversations/:sessionId/messages", async (req, res) => {
       content: fullResponse,
     });
 
+    const incrementalScore = estimateLeadScore(updatedMessages);
     const newCount = existingMessages.length + 2;
+
     await db
       .update(leadsTable)
       .set({
         conversationMessageCount: newCount,
+        qualificationScore: incrementalScore.qualificationScore,
+        qualificationSegment: incrementalScore.qualificationSegment,
+        businessSignals: incrementalScore.businessSignals,
+        urgencySignals: incrementalScore.urgencySignals,
+        fitSignals: incrementalScore.fitSignals,
+        engagementQuality: incrementalScore.engagementQuality,
         updatedAt: new Date(),
       })
       .where(eq(leadsTable.id, lead.id));
 
-    res.write(`data: ${JSON.stringify({ done: true, approachingLimit, userMessageCount: nextUserCount })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({
+        done: true,
+        approachingLimit,
+        userMessageCount: nextUserCount,
+        score: incrementalScore,
+      })}\n\n`
+    );
     res.end();
   } catch (err) {
     req.log.error({ err }, "Error streaming message");
@@ -242,8 +322,8 @@ router.post("/conversations/:sessionId/contact", async (req, res) => {
     .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
     .join("\n\n");
 
-  let qualScore = 20;
-  let segment = "low_fit";
+  let qualScore = lead.qualificationScore ?? 20;
+  let segment = lead.qualificationSegment ?? "low_fit";
   let prototypeId: string | null = null;
 
   try {
@@ -304,11 +384,7 @@ router.post("/conversations/:sessionId/contact", async (req, res) => {
 
     await db
       .update(prototypesTable)
-      .set({
-        htmlContent,
-        status: "ready",
-        updatedAt: new Date(),
-      })
+      .set({ htmlContent, status: "ready", updatedAt: new Date() })
       .where(eq(prototypesTable.id, prototype.id));
 
     const prototypeUrl = `/preview/${prototype.id}`;

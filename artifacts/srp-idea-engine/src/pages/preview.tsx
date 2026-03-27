@@ -1,5 +1,5 @@
 import { useRoute, Link } from "wouter";
-import { useGetPrototype } from "@workspace/api-client-react";
+import { useGetPrototype, getGetPrototypeQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -10,7 +10,7 @@ export default function PreviewPage() {
   const id = params?.id;
 
   const { data: prototype, isLoading, error } = useGetPrototype(id || "", {
-    query: { enabled: !!id }
+    query: { queryKey: getGetPrototypeQueryKey(id || ""), enabled: !!id }
   });
 
   if (isLoading) {

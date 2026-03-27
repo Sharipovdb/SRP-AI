@@ -5,6 +5,25 @@ import { anthropic } from "@workspace/integrations-anthropic-ai";
 
 const router: IRouter = Router();
 
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "srp-admin-2024";
+
+function requireAdmin(
+  req: import("express").Request,
+  res: import("express").Response,
+  next: import("express").NextFunction
+) {
+  const tokenFromQuery = req.query.token as string;
+  const tokenFromHeader = req.headers["x-admin-token"] as string;
+
+  if (tokenFromQuery !== ADMIN_TOKEN && tokenFromHeader !== ADMIN_TOKEN) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  next();
+}
+
+router.use("/anthropic", requireAdmin);
+
 router.get("/anthropic/conversations", async (_req, res) => {
   const all = await db.select().from(conversations).orderBy(conversations.createdAt);
   res.json(all);
