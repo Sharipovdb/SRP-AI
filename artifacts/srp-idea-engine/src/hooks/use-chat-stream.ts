@@ -5,6 +5,7 @@ import { getGetConversationQueryKey, ConversationWithMessages } from "@workspace
 export function useChatStream(sessionId: string | null) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamedText, setStreamedText] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const queryClient = useQueryClient();
 
   const sendMessage = useCallback(async (content: string, sessionIdOverride?: string) => {
@@ -13,6 +14,7 @@ export function useChatStream(sessionId: string | null) {
 
     setIsStreaming(true);
     setStreamedText("");
+    setSuggestions([]);
 
     try {
       const queryKey = getGetConversationQueryKey(activeSessionId);
@@ -69,9 +71,16 @@ export function useChatStream(sessionId: string | null) {
                 const data = JSON.parse(dataStr);
                 if (data.done) {
                   done = true;
+                  if (Array.isArray(data.suggestions) && data.suggestions.length > 0) {
+                    setSuggestions(data.suggestions);
+                  }
                 } else if (data.content) {
                   fullText += data.content;
-                  setStreamedText(fullText);
+                  const displayText = fullText
+                    .replace(/<SUGGESTIONS>[\s\S]*?<\/SUGGESTIONS>/gi, "")
+                    .replace(/<SUGGESTIONS>[\s\S]*/gi, "")
+                    .trimEnd();
+                  setStreamedText(displayText);
                 }
               } catch {
               }
@@ -89,6 +98,5 @@ export function useChatStream(sessionId: string | null) {
     }
   }, [sessionId, queryClient]);
 
-
-  return { sendMessage, isStreaming, streamedText };
+  return { sendMessage, isStreaming, streamedText, suggestions, setSuggestions };
 }

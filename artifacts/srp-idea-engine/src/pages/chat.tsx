@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useStartConversation, useGetConversation, useCaptureContact, useGeneratePrototype, getGetConversationQueryKey } from "@workspace/api-client-react";
+import { useStartConversation, useGetConversation, useCaptureContact, getGetConversationQueryKey } from "@workspace/api-client-react";
 import { useChatStream } from "@/hooks/use-chat-stream";
 import { ChatBubble } from "@/components/chat-bubble";
 import { useLocation } from "wouter";
@@ -50,14 +50,13 @@ export default function ChatPage() {
 
   const startMutation = useStartConversation();
   const captureMutation = useCaptureContact();
-  const generateMutation = useGeneratePrototype();
 
   const { data: conversation, isLoading: isLoadingConv } = useGetConversation(sessionId || "", {
     query: { queryKey: getGetConversationQueryKey(sessionId || ""), enabled: !!sessionId, retry: 1 },
     request: { credentials: "include" },
   });
 
-  const { sendMessage, isStreaming, streamedText } = useChatStream(sessionId);
+  const { sendMessage, isStreaming, streamedText, suggestions, setSuggestions } = useChatStream(sessionId);
 
   useEffect(() => {
     const stored = localStorage.getItem(SESSION_KEY);
@@ -137,8 +136,16 @@ export default function ChatPage() {
     if (!input.trim() || isStreaming) return;
     const text = input;
     setInput("");
+    setSuggestions([]);
     resetIdleTimer();
     await sendMessage(text);
+  };
+
+  const handleSuggestionClick = async (suggestion: string) => {
+    if (isStreaming) return;
+    setSuggestions([]);
+    resetIdleTimer();
+    await sendMessage(suggestion);
   };
 
   const handleEmailSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -159,7 +166,6 @@ export default function ChatPage() {
       } as Parameters<typeof captureMutation.mutateAsync>[0]);
 
       if (res.prototypeId) {
-        await generateMutation.mutateAsync({ id: res.prototypeId });
         setPrototypeId(res.prototypeId);
       } else {
         toast({ title: "Email saved", description: "We will be in touch shortly!" });
@@ -351,6 +357,31 @@ export default function ChatPage() {
                     </Button>
                   </div>
                 )}
+
+                <AnimatePresence>
+                  {suggestions.length > 0 && !isStreaming && (
+                    <motion.div
+                      key="suggestions"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 8 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex flex-wrap gap-2 mb-3"
+                    >
+                      {suggestions.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => handleSuggestionClick(s)}
+                          className="px-4 py-2 rounded-full text-sm font-semibold border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary/60 transition-all duration-150 shadow-sm"
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <form
                   onSubmit={handleSend}
                   className="relative flex items-end gap-3 bg-background border border-border rounded-2xl p-2 shadow-inner focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all"

@@ -230,15 +230,21 @@ router.post("/conversations/:sessionId/messages", async (req, res) => {
       }
     }
 
+    const suggestionsMatch = fullResponse.match(/<SUGGESTIONS>([\s\S]*?)<\/SUGGESTIONS>/i);
+    const suggestions: string[] = suggestionsMatch
+      ? suggestionsMatch[1].split("|").map((s) => s.trim()).filter(Boolean)
+      : [];
+    const cleanResponse = fullResponse.replace(/<SUGGESTIONS>[\s\S]*?<\/SUGGESTIONS>/gi, "").trim();
+
     const updatedMessages = [
       ...allMessages,
-      { role: "assistant" as const, content: fullResponse },
+      { role: "assistant" as const, content: cleanResponse },
     ];
 
     await db.insert(chatMessagesTable).values({
       leadId: lead.id,
       role: "assistant",
-      content: fullResponse,
+      content: cleanResponse,
     });
 
     const incrementalScore = estimateLeadScore(updatedMessages);
@@ -264,6 +270,7 @@ router.post("/conversations/:sessionId/messages", async (req, res) => {
         approachingLimit,
         exchangeCount: nextExchangeCount,
         score: incrementalScore,
+        suggestions,
       })}\n\n`
     );
     res.end();
