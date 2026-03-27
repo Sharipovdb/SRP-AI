@@ -7,14 +7,15 @@ export function useChatStream(sessionId: string | null) {
   const [streamedText, setStreamedText] = useState("");
   const queryClient = useQueryClient();
 
-  const sendMessage = useCallback(async (content: string) => {
-    if (!sessionId) return;
+  const sendMessage = useCallback(async (content: string, sessionIdOverride?: string) => {
+    const activeSessionId = sessionIdOverride ?? sessionId;
+    if (!activeSessionId) return;
 
     setIsStreaming(true);
     setStreamedText("");
 
     try {
-      const queryKey = getGetConversationQueryKey(sessionId);
+      const queryKey = getGetConversationQueryKey(activeSessionId);
       queryClient.setQueryData<ConversationWithMessages | undefined>(
         queryKey,
         (old) => {
@@ -34,7 +35,7 @@ export function useChatStream(sessionId: string | null) {
         }
       );
 
-      const res = await fetch(`/api/conversations/${sessionId}/messages`, {
+      const res = await fetch(`/api/conversations/${activeSessionId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -87,6 +88,7 @@ export function useChatStream(sessionId: string | null) {
       setStreamedText("");
     }
   }, [sessionId, queryClient]);
+
 
   return { sendMessage, isStreaming, streamedText };
 }

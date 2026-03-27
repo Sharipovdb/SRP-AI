@@ -68,7 +68,7 @@ export default function PreviewPage() {
               srcDoc={prototype.htmlContent}
               className="w-full h-full border-0"
               title="Prototype Preview"
-              sandbox="allow-scripts allow-same-origin allow-forms"
+              sandbox="allow-scripts allow-forms"
             />
           </div>
         ) : (

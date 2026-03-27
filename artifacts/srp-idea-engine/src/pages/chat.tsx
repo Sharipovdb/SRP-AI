@@ -126,10 +126,7 @@ export default function ChatPage() {
       } as Parameters<typeof startMutation.mutateAsync>[0]);
       localStorage.setItem(SESSION_KEY, res.sessionId);
       setSessionId(res.sessionId);
-
-      setTimeout(() => {
-        sendMessage(initialInput);
-      }, 300);
+      await sendMessage(initialInput, res.sessionId);
     } catch (err) {
       toast({ title: "Failed to connect", description: "Please try again later.", variant: "destructive" });
     }
