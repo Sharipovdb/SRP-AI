@@ -97,9 +97,18 @@ CONSULTANT RECOMMENDED: true if score >= 70 OR if idea has 5+ integrations OR me
 
 Return ONLY the JSON object, no other text.`;
 
-export const PROTOTYPE_CLICKABLE_WEB_PROMPT = (ideaSummary: string, primaryFeatures: string[], platform: string, company: string | null) => `
-You are generating a clickable HTML prototype for a client of Silk Road Professionals (SRP).
+export const PROTOTYPE_SYSTEM_PROMPT = `You are an expert front-end developer who generates production-quality, fully interactive HTML prototypes. You MUST follow every instruction precisely. The output must be a SINGLE self-contained HTML file with ALL CSS in one <style> tag and ALL JavaScript in one <script> tag at the end of <body>. No external libraries, CDN links, or frameworks — vanilla HTML/CSS/JS only.
 
+CRITICAL RULES:
+1. Every <a>, <button>, clickable card, sidebar link, tab, and navigation item MUST trigger a real JavaScript action.
+2. Never use href="#" without an onclick handler. Never leave non-functional click targets.
+3. All navigation between pages MUST work via the showPage() function (defined below).
+4. Forms must show a success toast/banner on submit (preventDefault, no actual POST).
+5. Modals must open and close properly using the toggleModal() function.
+6. Dropdowns, tabs, and accordions must toggle visibility on click.
+7. Return ONLY the HTML starting with <!DOCTYPE html>. No explanation, no markdown, no code fences.`;
+
+export const PROTOTYPE_CLICKABLE_WEB_PROMPT = (ideaSummary: string, primaryFeatures: string[], platform: string, company: string | null) => `
 CLIENT'S IDEA:
 ${ideaSummary}
 
@@ -107,32 +116,134 @@ PRIMARY FEATURES:
 ${primaryFeatures.join(', ')}
 
 PLATFORM: ${platform}
-COMPANY CONTEXT: ${company || 'Not specified'}
+COMPANY: ${company || 'Not specified'}
 
-Generate a complete, self-contained HTML file with 3-5 screens connected by navigation. The prototype should:
+BUILD A CLICKABLE PROTOTYPE following this exact architecture:
 
-1. Have a professional SRP-branded header on every screen: "Powered by Silk Road Professionals" in the top-right, with the product name/logo on the left
-2. Use a clean, professional design (navy/slate color scheme: #0f172a background for sidebar/header, #1e293b for panels, white content area)
-3. Include realistic placeholder data specific to the client's domain
-4. Have actual navigation between screens using CSS/JS (no frameworks needed)
-5. Show the most important features and screens relevant to the idea
-6. Include a subtle "This is a concept prototype by SRP" banner at the bottom
+## PAGE STRUCTURE
+Create these 5 screens as <section data-page="PAGE_NAME"> elements (adapt names to the client's domain). Only one is visible at a time.
+1. "dashboard" — Overview with summary cards, charts (CSS-drawn), recent activity list
+2. "list" — Searchable/filterable list or table of main entities, each row clickable → opens "detail"
+3. "detail" — Single entity detail view with tabs (Overview / Activity / Settings), edit button → opens modal
+4. "create" — Form to create a new entity, with labeled inputs, dropdowns, textareas, Submit and Cancel buttons
+5. "settings" — User profile / app settings with toggles, save button
+You may add a 6th page if the client's idea warrants it.
 
-HTML STRUCTURE:
-- Include all CSS inline in a <style> tag
-- Include all JavaScript inline in a <script> tag
-- Use only vanilla HTML/CSS/JS — no external libraries or CDN links
-- Make it look polished and professional (use proper shadows, borders, hover states)
-- Navigation: use data-page attributes and show/hide with JavaScript
+## NAVIGATION SYSTEM — USE THIS EXACT JAVASCRIPT PATTERN:
 
-REQUIRED SCREENS (adapt to the specific idea):
-- Dashboard/home screen (main overview)
-- A detail/list view 
-- A form or create/edit view
-- (optional) Settings or profile screen
+<script>
+  // -- Page navigation --
+  function showPage(name) {
+    document.querySelectorAll('[data-page]').forEach(function(el) {
+      el.style.display = 'none';
+    });
+    var target = document.querySelector('[data-page="' + name + '"]');
+    if (target) target.style.display = 'block';
+    // Update active state in sidebar
+    document.querySelectorAll('[data-nav]').forEach(function(link) {
+      link.classList.toggle('active', link.getAttribute('data-nav') === name);
+    });
+    window.scrollTo(0, 0);
+  }
 
-Return ONLY the complete HTML document, starting with <!DOCTYPE html>. No explanation, no markdown code blocks.
-`;
+  // -- Modal --
+  function toggleModal(id) {
+    var m = document.getElementById(id);
+    if (!m) return;
+    m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+  }
+
+  // -- Toast notification --
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = msg;
+    t.style.display = 'block';
+    t.style.opacity = '1';
+    setTimeout(function() { t.style.opacity = '0'; setTimeout(function() { t.style.display = 'none'; }, 300); }, 2500);
+  }
+
+  // -- Tabs --
+  function showTab(group, tabName) {
+    document.querySelectorAll('[data-tab-group="' + group + '"]').forEach(function(el) {
+      el.style.display = 'none';
+    });
+    var target = document.querySelector('[data-tab-group="' + group + '"][data-tab="' + tabName + '"]');
+    if (target) target.style.display = 'block';
+    document.querySelectorAll('[data-tab-btn-group="' + group + '"]').forEach(function(btn) {
+      btn.classList.toggle('tab-active', btn.getAttribute('data-tab-btn') === tabName);
+    });
+  }
+
+  // -- Form handling --
+  document.addEventListener('DOMContentLoaded', function() {
+    showPage('dashboard');
+    document.querySelectorAll('form[data-form]').forEach(function(form) {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        showToast('Saved successfully!');
+        var returnPage = form.getAttribute('data-return') || 'list';
+        setTimeout(function() { showPage(returnPage); }, 800);
+      });
+    });
+  });
+</script>
+
+## REQUIRED HTML ELEMENTS
+1. A persistent LEFT SIDEBAR (220px wide, dark #0f172a) with:
+   - App name/logo at the top (use the client's product concept)
+   - Navigation links as <a data-nav="PAGE_NAME" onclick="showPage('PAGE_NAME')"> for each page
+   - Active link highlighted with a left border accent and lighter background
+   - "Powered by SRP" small text at the bottom of sidebar
+
+2. A TOP HEADER BAR with:
+   - Page title (updates per page or is generic)
+   - A user avatar circle (initials) on the right with a dropdown that toggles on click
+   - A notification bell icon
+
+3. A TOAST element:
+   <div id="toast" style="display:none;position:fixed;bottom:24px;right:24px;background:#10b981;color:#fff;padding:12px 24px;border-radius:8px;font-weight:600;z-index:9999;transition:opacity .3s;box-shadow:0 4px 12px rgba(0,0,0,.15);"></div>
+
+4. At least one MODAL (e.g., edit entity or confirm delete):
+   <div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
+     <div style="background:#fff;border-radius:12px;padding:32px;max-width:500px;width:90%;position:relative;">
+       <button onclick="toggleModal('editModal')" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;">✕</button>
+       <!-- modal content -->
+     </div>
+   </div>
+
+## INTERACTIVITY REQUIREMENTS
+- Every sidebar link calls showPage('pageName')
+- Every "View", "Edit", "Details" button navigates or opens a modal
+- Every "Create New", "Add" button navigates to the create form: onclick="showPage('create')"
+- Every form has data-form attribute and submits via the JS handler (shows toast, then returns)
+- Table/list rows are clickable: onclick="showPage('detail')"
+- Tabs in the detail page use showTab()
+- Cancel buttons on forms: onclick="showPage('list')"
+- Delete buttons open a confirm modal: onclick="toggleModal('deleteModal')"
+- Toggle switches change state on click (CSS :checked or JS toggle)
+- Dropdown menus toggle visibility on click
+
+## DESIGN SYSTEM
+- Colors: Sidebar #0f172a, Header #ffffff with bottom border, Content bg #f8fafc
+- Accent: #3b82f6 (blue) for primary buttons and active states
+- Success: #10b981, Warning: #f59e0b, Danger: #ef4444
+- Text: #0f172a headings, #475569 body, #94a3b8 secondary
+- Cards: white background, border-radius 12px, subtle box-shadow, padding 24px
+- Buttons: border-radius 8px, font-weight 600, padding 10px 20px, cursor pointer, hover brightness
+- Inputs: border 1px solid #e2e8f0, border-radius 8px, padding 10px 14px, focus border #3b82f6
+- Sidebar links: padding 10px 16px, border-radius 8px, hover bg rgba(255,255,255,.08)
+- Active sidebar link: bg rgba(59,130,246,.15), color #3b82f6, left border 3px solid #3b82f6
+
+## CONTENT
+- Use realistic placeholder data relevant to the client's specific domain and industry
+- Dashboard: 3-4 stat cards with numbers and trend arrows, a recent items list
+- List: 5-8 rows of realistic data with status badges (colored), action buttons per row
+- Detail: Full entity info with multiple sections/tabs
+- Form: 4-6 form fields with proper labels, placeholder text, and validation styling
+- Settings: Profile info section, notification toggles, theme selection
+
+Generate the COMPLETE HTML file now.`;
 
 export const PROTOTYPE_TECHNICAL_SUMMARY_PROMPT = (ideaSummary: string, primaryFeatures: string[], platform: string, productType: string) => `
 You are generating a Technical Concept Summary for a client of Silk Road Professionals (SRP).
