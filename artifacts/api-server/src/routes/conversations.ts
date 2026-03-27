@@ -5,7 +5,7 @@ import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { SRP_SYSTEM_PROMPT } from "../lib/srp-system-prompt";
 import { checkRateLimit, incrementRateLimit } from "../lib/rate-limiter";
 import { qualifyLead } from "../lib/qualification";
-import { generatePrototypeHtml } from "../lib/prototype-generator";
+import { generateBothPrototypes } from "../lib/prototype-generator";
 import { estimateLeadScore } from "../lib/incremental-scorer";
 
 const router: IRouter = Router();
@@ -374,15 +374,14 @@ router.post("/conversations/:sessionId/contact", async (req, res) => {
       .insert(prototypesTable)
       .values({
         leadId: lead.id,
-        type: qualification.prototypeType,
+        type: "clickable_web",
         status: "generating",
       })
       .returning();
 
     prototypeId = prototype.id;
 
-    const htmlContent = await generatePrototypeHtml(
-      qualification.prototypeType,
+    const { prototypeHtml, technicalSummaryHtml } = await generateBothPrototypes(
       qualification.ideaSummary,
       qualification.primaryFeatures,
       qualification.platform,
@@ -392,7 +391,12 @@ router.post("/conversations/:sessionId/contact", async (req, res) => {
 
     await db
       .update(prototypesTable)
-      .set({ htmlContent, status: "ready", updatedAt: new Date() })
+      .set({
+        htmlContent: prototypeHtml,
+        technicalSummaryHtml,
+        status: "ready",
+        updatedAt: new Date(),
+      })
       .where(eq(prototypesTable.id, prototype.id));
 
     const prototypeUrl = `/preview/${prototype.id}`;

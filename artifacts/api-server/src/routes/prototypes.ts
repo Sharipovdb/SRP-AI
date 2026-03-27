@@ -36,6 +36,7 @@ router.get("/prototypes/:id", async (req, res) => {
     type: prototype.type,
     status: prototype.status,
     htmlContent: prototype.htmlContent,
+    technicalSummaryHtml: prototype.technicalSummaryHtml,
     createdAt: prototype.createdAt,
   });
 });

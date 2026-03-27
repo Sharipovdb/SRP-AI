@@ -17,6 +17,7 @@ export const prototypesTable = pgTable("prototypes", {
   type: text("type").notNull(),
   status: text("status").notNull().default("pending"),
   htmlContent: text("html_content"),
+  technicalSummaryHtml: text("technical_summary_html"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

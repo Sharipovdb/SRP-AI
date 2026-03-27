@@ -78,6 +78,8 @@ export interface Prototype {
   status: string;
   /** @nullable */
   htmlContent: string | null;
+  /** @nullable */
+  technicalSummaryHtml: string | null;
   createdAt: string;
 }
 

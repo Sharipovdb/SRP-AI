@@ -3,11 +3,13 @@ import { useGetPrototype, getGetPrototypeQueryKey } from "@workspace/api-client-
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, ExternalLink, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ExternalLink, ShieldCheck, FileText, MousePointer } from "lucide-react";
 
 export default function PreviewPage() {
   const [, params] = useRoute("/preview/:id");
   const id = params?.id;
+  const view = new URLSearchParams(window.location.search).get("view");
+  const showSummary = view === "summary";
 
   const { data: prototype, isLoading, error } = useGetPrototype(id || "", {
     query: { queryKey: getGetPrototypeQueryKey(id || ""), enabled: !!id }
@@ -35,6 +37,15 @@ export default function PreviewPage() {
     );
   }
 
+  const content = showSummary ? prototype.technicalSummaryHtml : prototype.htmlContent;
+  const label = showSummary ? "Technical Concept Summary" : "Interactive UI Concept";
+  const hasBoth = !!(prototype.htmlContent && prototype.technicalSummaryHtml);
+  const toggleHref = showSummary
+    ? `/preview/${id}`
+    : `/preview/${id}?view=summary`;
+  const toggleLabel = showSummary ? "View Interactive Prototype" : "View Technical Summary";
+  const ToggleIcon = showSummary ? MousePointer : FileText;
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <header className="h-20 border-b border-border/80 bg-card/90 backdrop-blur-xl flex items-center justify-between px-6 md:px-10 shrink-0 z-20 relative shadow-md">
@@ -47,14 +58,19 @@ export default function PreviewPage() {
                <span className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">Secure Asset</span>
              </div>
              <Badge variant="outline" className="mt-1 text-primary border-primary/30 bg-primary/10 uppercase tracking-widest text-[10px] font-bold py-0.5">
-               {prototype.type === "clickable_web" ? "Interactive UI Concept" : "Technical Architecture Summary"}
+               {label}
              </Badge>
            </div>
          </div>
-         <div className="flex items-center gap-4">
-           <Button variant="outline" className="border-border text-foreground hover:bg-muted hidden sm:flex font-semibold h-11 px-5 rounded-xl">
-             Share Concept <ExternalLink className="w-4 h-4 ml-2 opacity-70" />
-           </Button>
+         <div className="flex items-center gap-3">
+           {hasBoth && (
+             <Link href={toggleHref}>
+               <Button variant="outline" className="border-border text-foreground hover:bg-muted font-semibold h-11 px-5 rounded-xl gap-2">
+                 <ToggleIcon className="w-4 h-4 opacity-70" />
+                 <span className="hidden sm:inline">{toggleLabel}</span>
+               </Button>
+             </Link>
+           )}
            <Button className="bg-primary text-primary-foreground font-bold shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-300 h-11 px-6 rounded-xl">
              Take this further — Book a Call
            </Button>
@@ -62,18 +78,18 @@ export default function PreviewPage() {
       </header>
 
       <main className="flex-1 relative bg-muted/10 overflow-auto flex justify-center">
-        {prototype.htmlContent ? (
+        {content ? (
           <div className="w-full h-full max-w-7xl mx-auto shadow-2xl bg-white border-x border-border/50">
             <iframe
-              srcDoc={prototype.htmlContent}
+              srcDoc={content}
               className="w-full h-full border-0"
-              title="Prototype Preview"
+              title={label}
               sandbox="allow-scripts allow-forms"
             />
           </div>
         ) : (
           <div className="w-full max-w-5xl mx-auto py-12 px-4 md:px-8 text-center text-muted-foreground">
-            Prototype content is unavailable.
+            {showSummary ? "Technical summary is not available." : "Prototype content is unavailable."}
           </div>
         )}
       </main>

@@ -74,12 +74,18 @@ function LeadDetails({ leadId, adminHeaders }: { leadId: string; adminHeaders: R
          {lead.prototypeUrl && (
            <div>
              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
-               <span className="w-1.5 h-1.5 rounded-full bg-primary" /> Generated Asset
+               <span className="w-1.5 h-1.5 rounded-full bg-primary" /> Generated Assets
              </h4>
-             <Link href={`/preview/${lead.prototypeUrl.split('/').pop()}`} className="inline-flex items-center justify-between w-full sm:w-auto min-w-[250px] bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 hover:border-primary/40 px-5 py-3 rounded-xl font-semibold transition-all group shadow-sm">
-               {lead.prototypeType === 'clickable_web' ? 'Interactive Concept' : 'Technical Summary'}
-               <ArrowRight className="w-4 h-4 ml-4 group-hover:translate-x-1 transition-transform" />
-             </Link>
+             <div className="flex flex-col sm:flex-row gap-3">
+               <Link href={`/preview/${lead.prototypeUrl.split('/').pop()}`} className="inline-flex items-center justify-between bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 hover:border-primary/40 px-5 py-3 rounded-xl font-semibold transition-all group shadow-sm">
+                 Interactive Prototype
+                 <ArrowRight className="w-4 h-4 ml-4 group-hover:translate-x-1 transition-transform" />
+               </Link>
+               <Link href={`/preview/${lead.prototypeUrl.split('/').pop()}?view=summary`} className="inline-flex items-center justify-between bg-muted/60 border border-border text-foreground hover:bg-muted hover:border-border/80 px-5 py-3 rounded-xl font-semibold transition-all group shadow-sm">
+                 Technical Summary
+                 <ArrowRight className="w-4 h-4 ml-4 group-hover:translate-x-1 transition-transform" />
+               </Link>
+             </div>
            </div>
          )}
 
