@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { format } from "date-fns";
-import { ChevronDown, Filter, ShieldAlert, ArrowRight, Save } from "lucide-react";
+import { ChevronDown, Filter, ShieldAlert, ArrowRight, Save, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useListLeads, useGetLead, useUpdateLead, getListLeadsQueryKey, getGetLeadQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,11 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
-
-const ADMIN_TOKEN = "srp-admin-2024";
 
 const ScoreRing = ({ score }: { score: number }) => {
   const color = score >= 70 ? "text-green-500" : score >= 40 ? "text-yellow-500" : "text-red-500";
@@ -139,32 +138,126 @@ function LeadDetails({ leadId, adminHeaders }: { leadId: string; adminHeaders: R
   );
 }
 
+type SortField = "createdAt" | "qualificationScore";
+type SortOrder = "asc" | "desc";
+
+function SortHeader({
+  label,
+  field,
+  sortBy,
+  sortOrder,
+  onSort,
+}: {
+  label: string;
+  field: SortField;
+  sortBy: SortField;
+  sortOrder: SortOrder;
+  onSort: (field: SortField) => void;
+}) {
+  const isActive = sortBy === field;
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(field)}
+      className="flex items-center gap-1.5 font-bold text-foreground hover:text-primary transition-colors group"
+    >
+      {label}
+      {isActive ? (
+        sortOrder === "desc" ? <ArrowDown className="w-3.5 h-3.5 text-primary" /> : <ArrowUp className="w-3.5 h-3.5 text-primary" />
+      ) : (
+        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 group-hover:opacity-60 transition-opacity" />
+      )}
+    </button>
+  );
+}
+
 export default function AdminPage() {
-  const searchParams = new URLSearchParams(window.location.search);
-  const token = searchParams.get("token");
-
+  const [token, setToken] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("token") || "";
+  });
+  const [tokenInput, setTokenInput] = useState("");
   const [segment, setSegment] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<SortField>("createdAt");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [authError, setAuthError] = useState(false);
 
-  const adminHeaders = { "x-admin-token": ADMIN_TOKEN };
+  const adminHeaders = { "x-admin-token": token };
 
   const { data: listResponse, isLoading } = useListLeads(
     {
       segment: segment === "all" ? undefined : segment,
+      sortBy,
+      sortOrder,
       limit: 50,
     },
     {
       request: { headers: adminHeaders },
-      query: { queryKey: getListLeadsQueryKey({ segment: segment === "all" ? undefined : segment, limit: 50 }), enabled: token === ADMIN_TOKEN },
+      query: {
+        queryKey: getListLeadsQueryKey({ segment: segment === "all" ? undefined : segment, sortBy, sortOrder, limit: 50 }),
+        enabled: !!token,
+        retry: false,
+      },
     }
   );
 
-  if (token !== ADMIN_TOKEN) {
+  React.useEffect(() => {
+    if (!!token && !isLoading && listResponse === undefined) {
+      setAuthError(true);
+    } else if (listResponse !== undefined) {
+      setAuthError(false);
+    }
+  }, [token, isLoading, listResponse]);
+
+  const handleSort = (field: SortField) => {
+    if (sortBy === field) {
+      setSortOrder(o => (o === "desc" ? "asc" : "desc"));
+    } else {
+      setSortBy(field);
+      setSortOrder("desc");
+    }
+  };
+
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center px-4">
+        <ShieldAlert className="w-20 h-20 text-primary mb-6 opacity-80" />
+        <h1 className="text-4xl font-display font-bold text-foreground mb-2">SRP Admin Access</h1>
+        <p className="text-muted-foreground mb-8 max-w-sm">Enter your administrator access token to continue.</p>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setAuthError(false);
+            setToken(tokenInput.trim());
+          }}
+          className="flex flex-col sm:flex-row gap-3 w-full max-w-md"
+        >
+          <Input
+            type="password"
+            value={tokenInput}
+            onChange={e => setTokenInput(e.target.value)}
+            placeholder="Access token"
+            className="h-14 text-base rounded-xl"
+            autoFocus
+          />
+          <Button type="submit" size="lg" className="h-14 px-8 font-semibold rounded-xl" disabled={!tokenInput.trim()}>
+            Authenticate
+          </Button>
+        </form>
+      </div>
+    );
+  }
+
+  if (authError) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center px-4">
         <ShieldAlert className="w-20 h-20 text-destructive mb-6 opacity-80" />
-        <h1 className="text-4xl font-display font-bold text-foreground mb-4">Secure Area</h1>
-        <p className="text-lg text-muted-foreground">Valid administrator credentials required.</p>
+        <h1 className="text-4xl font-display font-bold text-foreground mb-4">Access Denied</h1>
+        <p className="text-lg text-muted-foreground mb-8">The token you entered is invalid.</p>
+        <Button variant="outline" onClick={() => { setToken(""); setTokenInput(""); setAuthError(false); }}>
+          Try Again
+        </Button>
       </div>
     );
   }
@@ -188,9 +281,28 @@ export default function AdminPage() {
       <main className="flex-1 flex flex-col min-w-0">
         <header className="h-20 border-b border-border bg-card/80 backdrop-blur-xl flex items-center justify-between px-6 md:px-10 z-10">
           <h1 className="text-2xl font-bold font-display tracking-tight">Intelligence Dashboard</h1>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <Select value={sortBy} onValueChange={(v) => { setSortBy(v as SortField); }}>
+              <SelectTrigger className="w-[160px] h-11 bg-background border-border shadow-sm rounded-xl">
+                <ArrowUpDown className="w-4 h-4 mr-2 text-primary" />
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt">Sort by Date</SelectItem>
+                <SelectItem value="qualificationScore">Sort by Score</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-11 w-11 rounded-xl border-border"
+              onClick={() => setSortOrder(o => o === "desc" ? "asc" : "desc")}
+              title={sortOrder === "desc" ? "Descending" : "Ascending"}
+            >
+              {sortOrder === "desc" ? <ArrowDown className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />}
+            </Button>
             <Select value={segment} onValueChange={setSegment}>
-              <SelectTrigger className="w-[200px] h-11 bg-background border-border shadow-sm rounded-xl">
+              <SelectTrigger className="w-[180px] h-11 bg-background border-border shadow-sm rounded-xl">
                 <Filter className="w-4 h-4 mr-2 text-primary" />
                 <SelectValue placeholder="Filter Segment" />
               </SelectTrigger>
@@ -232,11 +344,15 @@ export default function AdminPage() {
                    <TableHeader className="bg-muted/40">
                      <TableRow className="border-border hover:bg-transparent">
                        <TableHead className="font-bold text-foreground py-5 px-6">Prospect</TableHead>
-                       <TableHead className="font-bold text-foreground py-5">Intel Score</TableHead>
+                       <TableHead className="py-5">
+                         <SortHeader label="Intel Score" field="qualificationScore" sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} />
+                       </TableHead>
                        <TableHead className="font-bold text-foreground py-5">Classification</TableHead>
                        <TableHead className="font-bold text-foreground py-5 hidden md:table-cell">Product Sector</TableHead>
                        <TableHead className="font-bold text-foreground py-5">Funnel Stage</TableHead>
-                       <TableHead className="font-bold text-foreground py-5 text-right px-6">Date</TableHead>
+                       <TableHead className="py-5 text-right px-6">
+                         <SortHeader label="Date" field="createdAt" sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} />
+                       </TableHead>
                      </TableRow>
                    </TableHeader>
                    <TableBody>

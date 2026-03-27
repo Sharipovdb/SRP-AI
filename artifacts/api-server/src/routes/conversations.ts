@@ -10,8 +10,8 @@ import { estimateLeadScore } from "../lib/incremental-scorer";
 
 const router: IRouter = Router();
 
-const HARD_CAP_USER_MESSAGES = 15;
-const SOFT_REDIRECT_USER_MESSAGES = 12;
+const HARD_CAP_EXCHANGES = 15;
+const SOFT_REDIRECT_EXCHANGES = 12;
 const SESSION_COOKIE = "srp_session";
 const COOKIE_MAX_AGE = 24 * 60 * 60;
 
@@ -181,8 +181,9 @@ router.post("/conversations/:sessionId/messages", async (req, res) => {
     .orderBy(chatMessagesTable.createdAt);
 
   const userMessageCount = existingMessages.filter((m) => m.role === "user").length;
+  const exchangeCount = userMessageCount;
 
-  if (userMessageCount >= HARD_CAP_USER_MESSAGES) {
+  if (exchangeCount >= HARD_CAP_EXCHANGES) {
     res.status(400).json({
       error:
         "Conversation limit reached. Please provide your contact information to receive your concept summary.",
@@ -208,8 +209,8 @@ router.post("/conversations/:sessionId/messages", async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
 
   let fullResponse = "";
-  const nextUserCount = userMessageCount + 1;
-  const approachingLimit = nextUserCount >= SOFT_REDIRECT_USER_MESSAGES;
+  const nextExchangeCount = exchangeCount + 1;
+  const approachingLimit = nextExchangeCount >= SOFT_REDIRECT_EXCHANGES;
 
   try {
     const stream = anthropic.messages.stream({
@@ -261,7 +262,7 @@ router.post("/conversations/:sessionId/messages", async (req, res) => {
       `data: ${JSON.stringify({
         done: true,
         approachingLimit,
-        userMessageCount: nextUserCount,
+        exchangeCount: nextExchangeCount,
         score: incrementalScore,
       })}\n\n`
     );
