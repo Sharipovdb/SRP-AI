@@ -1,15 +1,25 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { eq } from "drizzle-orm";
 import { db, prototypesTable } from "@workspace/db";
 import { qualifyLead } from "../lib/qualification";
 import { generatePrototypeHtml } from "../lib/prototype-generator";
 import { chatMessagesTable, leadsTable } from "@workspace/db";
-import { desc } from "drizzle-orm";
 
 const router: IRouter = Router();
 
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "srp-admin-2024";
+
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  const token = req.headers["x-admin-token"] || req.query.token;
+  if (token !== ADMIN_TOKEN) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  next();
+}
+
 router.get("/prototypes/:id", async (req, res) => {
-  const { id } = req.params;
+  const id = String(req.params.id);
 
   const prototype = await db.query.prototypesTable.findFirst({
     where: eq(prototypesTable.id, id),
@@ -30,8 +40,8 @@ router.get("/prototypes/:id", async (req, res) => {
   });
 });
 
-router.post("/prototypes/:id/generate", async (req, res) => {
-  const { id } = req.params;
+router.post("/prototypes/:id/generate", requireAdmin, async (req, res) => {
+  const id = String(req.params.id);
 
   const prototype = await db.query.prototypesTable.findFirst({
     where: eq(prototypesTable.id, id),
