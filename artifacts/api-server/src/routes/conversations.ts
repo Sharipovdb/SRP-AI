@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db, leadsTable, chatMessagesTable, prototypesTable } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { SRP_SYSTEM_PROMPT } from "../lib/srp-system-prompt";
@@ -8,6 +8,9 @@ import { qualifyLead } from "../lib/qualification";
 import { generatePrototypeHtml } from "../lib/prototype-generator";
 
 const router: IRouter = Router();
+
+const HARD_CAP_USER_MESSAGES = 15;
+const SOFT_REDIRECT_USER_MESSAGES = 12;
 
 router.post("/conversations", async (req, res) => {
   const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.socket?.remoteAddress || "unknown";
@@ -116,8 +119,12 @@ router.post("/conversations/:sessionId/messages", async (req, res) => {
     .where(eq(chatMessagesTable.leadId, lead.id))
     .orderBy(chatMessagesTable.createdAt);
 
-  if (existingMessages.length >= 30) {
-    res.status(400).json({ error: "Conversation has reached the maximum length." });
+  const userMessageCount = existingMessages.filter((m) => m.role === "user").length;
+
+  if (userMessageCount >= HARD_CAP_USER_MESSAGES) {
+    res.status(400).json({
+      error: "Conversation limit reached. Please provide your contact information to receive your concept summary.",
+    });
     return;
   }
 
@@ -139,6 +146,8 @@ router.post("/conversations/:sessionId/messages", async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
 
   let fullResponse = "";
+  const nextUserCount = userMessageCount + 1;
+  const approachingLimit = nextUserCount >= SOFT_REDIRECT_USER_MESSAGES;
 
   try {
     const stream = anthropic.messages.stream({
@@ -175,7 +184,7 @@ router.post("/conversations/:sessionId/messages", async (req, res) => {
       })
       .where(eq(leadsTable.id, lead.id));
 
-    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.write(`data: ${JSON.stringify({ done: true, approachingLimit, userMessageCount: nextUserCount })}\n\n`);
     res.end();
   } catch (err) {
     req.log.error({ err }, "Error streaming message");
@@ -253,6 +262,10 @@ router.post("/conversations/:sessionId/contact", async (req, res) => {
       .set({
         qualificationScore: qualification.qualificationScore,
         qualificationSegment: qualification.qualificationSegment,
+        businessSignals: qualification.businessSignals,
+        urgencySignals: qualification.urgencySignals,
+        fitSignals: qualification.fitSignals,
+        engagementQuality: qualification.engagementQuality,
         ideaSummary: qualification.ideaSummary,
         productType: qualification.productType,
         platform: qualification.platform,
@@ -344,10 +357,10 @@ router.get("/conversations/:sessionId/score", async (req, res) => {
   res.json({
     score: lead.qualificationScore ?? 0,
     segment: lead.qualificationSegment ?? "not_qualified",
-    businessSignals: 0,
-    urgencySignals: 0,
-    fitSignals: 0,
-    engagementQuality: 0,
+    businessSignals: lead.businessSignals ?? 0,
+    urgencySignals: lead.urgencySignals ?? 0,
+    fitSignals: lead.fitSignals ?? 0,
+    engagementQuality: lead.engagementQuality ?? 0,
   });
 });
 

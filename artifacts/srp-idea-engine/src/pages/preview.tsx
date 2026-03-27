@@ -3,7 +3,6 @@ import { useGetPrototype } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Card } from "@/components/ui/card";
 import { ArrowLeft, ExternalLink, ShieldCheck } from "lucide-react";
 
 export default function PreviewPage() {
@@ -38,7 +37,6 @@ export default function PreviewPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      {/* Premium Header */}
       <header className="h-20 border-b border-border/80 bg-card/90 backdrop-blur-xl flex items-center justify-between px-6 md:px-10 shrink-0 z-20 relative shadow-md">
          <div className="flex items-center gap-5">
            <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="SRP" className="w-10 h-10" />
@@ -63,35 +61,20 @@ export default function PreviewPage() {
          </div>
       </header>
 
-      {/* Viewer Area */}
       <main className="flex-1 relative bg-muted/10 overflow-auto flex justify-center">
-        {prototype.type === "clickable_web" ? (
-           <div className="w-full h-full max-w-7xl mx-auto shadow-2xl bg-white border-x border-border/50">
-             <iframe
-               srcDoc={prototype.htmlContent || ""}
-               className="w-full h-full border-0"
-               title="Prototype Preview"
-               sandbox="allow-scripts allow-same-origin allow-forms"
-             />
-           </div>
+        {prototype.htmlContent ? (
+          <div className="w-full h-full max-w-7xl mx-auto shadow-2xl bg-white border-x border-border/50">
+            <iframe
+              srcDoc={prototype.htmlContent}
+              className="w-full h-full border-0"
+              title="Prototype Preview"
+              sandbox="allow-scripts allow-same-origin allow-forms"
+            />
+          </div>
         ) : (
-           <div className="w-full max-w-5xl mx-auto py-12 px-4 md:px-8">
-              <Card className="p-8 md:p-14 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] bg-card border-border/80 relative overflow-hidden rounded-2xl">
-                 <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary via-amber-300 to-primary opacity-90" />
-                 
-                 <div
-                   className="prose prose-sm md:prose-base prose-invert max-w-none 
-                              prose-headings:font-display prose-headings:tracking-tight prose-headings:text-foreground
-                              prose-h1:text-4xl prose-h1:mb-8 prose-h1:text-transparent prose-h1:bg-clip-text prose-h1:bg-gradient-to-r prose-h1:from-white prose-h1:to-white/70
-                              prose-h2:text-2xl prose-h2:mt-12 prose-h2:border-b prose-h2:border-border/50 prose-h2:pb-3
-                              prose-a:text-primary hover:prose-a:text-primary/80 
-                              prose-strong:text-amber-100 prose-strong:font-bold
-                              prose-ul:my-6 prose-li:my-2
-                              prose-p:text-muted-foreground prose-p:leading-relaxed"
-                   dangerouslySetInnerHTML={{ __html: prototype.htmlContent || "" }}
-                 />
-              </Card>
-           </div>
+          <div className="w-full max-w-5xl mx-auto py-12 px-4 md:px-8 text-center text-muted-foreground">
+            Prototype content is unavailable.
+          </div>
         )}
       </main>
     </div>

@@ -38,6 +38,10 @@ export const leadsTable = pgTable("leads", {
 
   qualificationScore: integer("qualification_score"),
   qualificationSegment: text("qualification_segment"),
+  businessSignals: integer("business_signals"),
+  urgencySignals: integer("urgency_signals"),
+  fitSignals: integer("fit_signals"),
+  engagementQuality: integer("engagement_quality"),
 
   prototypeType: text("prototype_type"),
   prototypeUrl: text("prototype_url"),

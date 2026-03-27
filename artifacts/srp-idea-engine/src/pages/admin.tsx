@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 
+const ADMIN_TOKEN = "srp-admin-2024";
+
 const ScoreRing = ({ score }: { score: number }) => {
   const color = score >= 70 ? "text-green-500" : score >= 40 ? "text-yellow-500" : "text-red-500";
   return (
@@ -25,15 +27,18 @@ const ScoreRing = ({ score }: { score: number }) => {
   );
 };
 
-function LeadDetails({ leadId }: { leadId: string }) {
-  const { data: lead, isLoading } = useGetLead(leadId);
-  const updateMutation = useUpdateLead();
+function LeadDetails({ leadId, adminHeaders }: { leadId: string; adminHeaders: Record<string, string> }) {
+  const { data: lead, isLoading } = useGetLead(leadId, {
+    request: { headers: adminHeaders },
+  });
+  const updateMutation = useUpdateLead({
+    request: { headers: adminHeaders },
+  });
   const { toast } = useToast();
 
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("");
 
-  // Sync state once data loads
   React.useEffect(() => {
     if (lead) {
       setStatus(lead.status);
@@ -56,7 +61,6 @@ function LeadDetails({ leadId }: { leadId: string }) {
 
   return (
     <div className="p-6 md:p-8 grid grid-cols-1 xl:grid-cols-3 gap-8 bg-muted/10 border-x border-b border-border/50 rounded-b-xl shadow-inner">
-       {/* Intelligence Column */}
        <div className="space-y-8 xl:col-span-2">
          <div>
            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -66,7 +70,7 @@ function LeadDetails({ leadId }: { leadId: string }) {
              <p className="text-foreground leading-relaxed">{lead.ideaSummary || "Awaiting final synthesis."}</p>
            </div>
          </div>
-         
+
          {lead.prototypeUrl && (
            <div>
              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -94,12 +98,11 @@ function LeadDetails({ leadId }: { leadId: string }) {
          </div>
        </div>
 
-       {/* CRM / Action Column */}
        <div className="space-y-6 bg-card p-6 rounded-2xl border border-border shadow-lg h-fit">
          <h4 className="text-sm font-display font-bold text-foreground flex items-center gap-2 border-b border-border/50 pb-4">
            Sales Workflow
          </h4>
-         
+
          <div className="space-y-3">
            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pipeline Status</label>
            <Select value={status} onValueChange={setStatus}>
@@ -119,9 +122,9 @@ function LeadDetails({ leadId }: { leadId: string }) {
 
          <div className="space-y-3">
            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Internal Notes</label>
-           <Textarea 
-             value={notes} 
-             onChange={e => setNotes(e.target.value)} 
+           <Textarea
+             value={notes}
+             onChange={e => setNotes(e.target.value)}
              placeholder="Add strategic notes, budget signals, or context..."
              className="resize-none h-40 bg-background rounded-xl border-border/80 p-4"
            />
@@ -138,16 +141,24 @@ function LeadDetails({ leadId }: { leadId: string }) {
 export default function AdminPage() {
   const searchParams = new URLSearchParams(window.location.search);
   const token = searchParams.get("token");
-  
+
   const [segment, setSegment] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const { data: listResponse, isLoading } = useListLeads({
-    segment: segment === "all" ? undefined : segment,
-    limit: 50
-  });
+  const adminHeaders = { "x-admin-token": ADMIN_TOKEN };
 
-  if (token !== "srp-admin-2024") {
+  const { data: listResponse, isLoading } = useListLeads(
+    {
+      segment: segment === "all" ? undefined : segment,
+      limit: 50,
+    },
+    {
+      request: { headers: adminHeaders },
+      query: { enabled: token === ADMIN_TOKEN },
+    }
+  );
+
+  if (token !== ADMIN_TOKEN) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center px-4">
         <ShieldAlert className="w-20 h-20 text-destructive mb-6 opacity-80" />
@@ -161,7 +172,6 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex">
-      {/* Sidebar */}
       <aside className="w-64 border-r border-border bg-card hidden lg:flex flex-col z-10 shadow-xl">
         <div className="h-20 flex items-center px-6 border-b border-border/50">
            <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="SRP" className="w-8 h-8 mr-3" />
@@ -174,7 +184,6 @@ export default function AdminPage() {
         </nav>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
         <header className="h-20 border-b border-border bg-card/80 backdrop-blur-xl flex items-center justify-between px-6 md:px-10 z-10">
           <h1 className="text-2xl font-bold font-display tracking-tight">Intelligence Dashboard</h1>
@@ -196,9 +205,8 @@ export default function AdminPage() {
 
         <div className="flex-1 p-6 md:p-10 overflow-auto bg-background relative">
            <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
-           
+
            <div className="relative z-10">
-             {/* Key Metrics */}
              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
                <Card className="bg-card border-border shadow-md rounded-2xl overflow-hidden relative">
                  <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
@@ -217,7 +225,6 @@ export default function AdminPage() {
                </Card>
              </div>
 
-             {/* Data Table */}
              <Card className="bg-card border-border shadow-xl overflow-hidden rounded-2xl">
                <div className="overflow-x-auto">
                  <Table>
@@ -238,7 +245,7 @@ export default function AdminPage() {
                        <TableRow><TableCell colSpan={6} className="text-center py-16 text-muted-foreground font-medium">No leads match current filters.</TableCell></TableRow>
                      ) : leads.map(lead => (
                        <React.Fragment key={lead.id}>
-                         <TableRow 
+                         <TableRow
                            className={cn("cursor-pointer transition-colors border-border/50", expandedId === lead.id ? "bg-muted/20 hover:bg-muted/20" : "hover:bg-muted/40")}
                            onClick={() => setExpandedId(expandedId === lead.id ? null : lead.id)}
                          >
@@ -276,7 +283,7 @@ export default function AdminPage() {
                          {expandedId === lead.id && (
                            <TableRow className="border-0 hover:bg-transparent">
                              <TableCell colSpan={6} className="p-0">
-                               <LeadDetails leadId={lead.id} />
+                               <LeadDetails leadId={lead.id} adminHeaders={adminHeaders} />
                              </TableCell>
                            </TableRow>
                          )}
