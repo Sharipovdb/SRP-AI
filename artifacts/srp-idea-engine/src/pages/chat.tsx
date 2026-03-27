@@ -196,7 +196,7 @@ export default function ChatPage() {
 
             <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight mb-5 leading-[1.1]">
               Turn your idea into a{" "}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-amber-200">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-sky-300">
                 visual concept
               </span>
             </h1>
@@ -216,7 +216,7 @@ export default function ChatPage() {
                 type="submit"
                 size="lg"
                 disabled={startMutation.isPending || !initialInput.trim()}
-                className="h-14 px-7 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl shrink-0 shadow-xl shadow-amber-500/20 transition-all hover:-translate-y-0.5"
+                className="h-14 px-7 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl shrink-0 shadow-xl shadow-primary/30 transition-all hover:-translate-y-0.5"
               >
                 {startMutation.isPending ? "Starting..." : "Start"}
                 <ArrowRight className="ml-2 w-4 h-4" />

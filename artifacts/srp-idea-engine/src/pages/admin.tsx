@@ -241,7 +241,7 @@ export default function AdminPage() {
             className="h-14 text-base rounded-xl"
             autoFocus
           />
-          <Button type="submit" size="lg" className="h-14 px-8 font-bold rounded-xl bg-amber-500 hover:bg-amber-400 text-black shadow-xl shadow-amber-500/20 transition-all hover:-translate-y-0.5" disabled={!tokenInput.trim()}>
+          <Button type="submit" size="lg" className="h-14 px-8 font-bold rounded-xl bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5" disabled={!tokenInput.trim()}>
             Authenticate
           </Button>
         </form>
