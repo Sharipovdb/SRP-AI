@@ -1,0 +1,438 @@
+AI Idea-to-MVP Engine — Product Strategy & MVP Plan
+Prepared for: Silk Road Professionals (SRP) Date: March 27, 2026 Document type: Product concept, system architecture, and MVP roadmap
+________________________________________
+1. Executive Summary
+What this product is
+The AI Idea-to-MVP Engine is a pre-sales automation tool that sits at the top of SRP's funnel. A potential client arrives with a rough software idea — often vague, technically uninformed, and not spec-ready. Instead of asking them to book a call or fill out a form, SRP offers an AI-guided conversation that does three things: (1) shapes the idea into something concrete through smart questioning, (2) generates a tangible prototype artifact — a clickable UI, a flow diagram, a technical concept document — and delivers it to the client by email, and (3) captures structured lead data that feeds directly into SRP's sales process.
+The business purpose is not to build free MVPs. It is to compress the gap between "I have an idea" and "I trust SRP enough to pay for discovery." The prototype is the trust artifact. The conversation is the qualification engine. The email is the sales trigger.
+Why this fits SRP specifically
+SRP's brand is built on three things: turning unclear business needs into working software, clear communication, and trust-building with international clients. This product is a direct expression of that positioning. It demonstrates SRP's core competence before the client pays anything.
+More importantly, SRP already has the Product Foundation service — a $1,500 offering that takes AI prototypes and grafts them into production-ready architecture in 7 days. The AI Idea-to-MVP Engine creates a natural upstream funnel into Product Foundation. The sequence becomes: free AI conversation → prototype email → Product Foundation → full engagement. This is a complete pipeline from stranger to paying client.
+SRP's tech stack (Next.js, React, Node.js, .NET, Python) and existing experience with AI-powered B2B solutions means the team can build this with internal capabilities. The Product Foundation page already references tools like Lovable and Replit — this engine would be SRP's own version of that first touch, but controlled and branded.
+________________________________________
+2. Clarification Questions
+Before building, SRP should have clear answers to these. I've grouped them by decision category.
+Business Model & Positioning
+1.	Is the prototype purely a lead-gen device, or should it have standalone value? If clients can get a genuinely useful prototype for free, some will take it and never come back. If it's too thin, it won't impress anyone. Where is the line?
+2.	Should this replace the current "Free Tech Consultation" booking flow, or run alongside it? The current site pushes people to a 45-minute call. This engine could be the lower-commitment alternative for people not ready for a call. Or it could be the required first step before any call.
+3.	What is the target deal size? A client building a $5K marketing site has very different needs than a client building a $200K enterprise platform. Does SRP want this engine to handle both, or filter for specific engagement sizes?
+4.	Is there a paid tier? For example: basic prototype free, detailed technical spec for $99, Product Foundation for $1,500. A tiered model could offset AI costs and qualify buyers by willingness to pay.
+Conversation & Qualification
+5.	How many AI-generated prototypes per month can SRP support reviewing and following up on? If 500 people use this per month but SRP can only follow up on 20, the qualification logic needs to be very aggressive.
+6.	Who is the human escalation target? A sales rep? A technical lead? A project manager? This changes the handoff flow significantly.
+7.	What CRM does SRP use today? Or is there no CRM and this would be the first structured lead management system?
+8.	What disqualifies a lead? Students? Side projects? Competitors researching SRP? Clients in industries SRP doesn't serve? Be explicit so the AI can filter early.
+Prototype Generation
+9.	How polished does the output need to be? A wireframe with SRP branding is very different from a functional clickable prototype with sample data. The first takes seconds to generate; the second takes minutes and costs more in compute.
+10.	Is SRP comfortable with AI-generated code artifacts being sent to clients? There's a reputational risk if the prototype has bugs or looks generic. Should every output go through a human review queue, or is automated delivery acceptable for qualified leads?
+11.	Does SRP want the prototype to run on SRP infrastructure (hosted link) or be a static deliverable (PDF, image, HTML file)? Hosted links create ongoing infrastructure cost but feel more impressive. Static files are cheaper but less "wow."
+Technical & Operational
+12.	What is the acceptable cost per lead? AI API calls, prototype generation, email delivery, hosting — each lead has a marginal cost. SRP should have a budget target per qualified lead.
+13.	Does SRP have an existing email delivery system (SendGrid, Postmark, etc.) or does this need to be built from scratch?
+14.	What analytics does SRP currently track? Google Analytics on the website? HubSpot? Nothing? This determines whether integration or greenfield is faster.
+________________________________________
+3. Recommended End-to-End Flow
+The Full Client Journey
+Entry Point → Conversation → Qualification → Contact Capture → Prototype Generation → Delivery → Follow-Up → Consultant Escalation → CRM Visibility
+Here is the flow, step by step:
+Stage 1: Entry Point
+The client lands on a dedicated page (e.g., srpsoftware.com/build or srpsoftware.com/idea). The page has a single clear message: "Describe your software idea. We'll shape it and show you what it could look like — in minutes." Below the headline is a chat interface. No forms. No booking links. Just the chat.
+Alternative entry points: a CTA button on the homepage, a link in LinkedIn posts, a QR code at conferences, an email signature link.
+Stage 2: AI Conversation (3–8 minutes)
+The AI agent greets the client and asks the first question. The conversation follows a structured but natural arc:
+•	Phase A — Idea capture (2–3 questions): What are you trying to build? Who is the user? What problem does it solve?
+•	Phase B — Scope shaping (2–3 questions): What's the most important feature? Web or mobile? Do you have existing systems this needs to connect to?
+•	Phase C — Context capture (1–2 questions): What's your timeline? Have you worked with a development team before? What's driving this — a business need, investor requirement, internal process pain?
+The AI should NOT ask all questions upfront. It asks one at a time, adapts based on responses, and summarizes periodically.
+Stage 3: Contact Capture Gate
+After Phase B (scope shaping), the AI says something like: "I have a good picture of your idea. I can put together a visual concept for you — I'll need your email to send it. What's the best address?"
+This is the gate. No email, no prototype. The AI can also ask for name and company at this point, but email is the minimum.
+If the client refuses to give email, the AI provides a brief summary of the conversation and suggests booking a free consultation instead. The conversation data is still stored as an anonymous lead.
+Stage 4: Qualification Scoring (happens silently)
+While the conversation is ongoing, the system scores the lead in real-time based on signals extracted from the conversation (see Section 5). The score determines:
+•	What quality of prototype to generate (basic wireframe vs. richer output)
+•	Whether to auto-assign a sales follow-up
+•	Whether to flag for immediate human review
+Stage 5: Prototype Generation (30 seconds – 3 minutes)
+The system generates the appropriate output based on the idea type (see Section 6). The client sees a loading state with a message like: "Building your concept now — this usually takes about a minute."
+Stage 6: Email Delivery
+The prototype is sent to the client's email with:
+•	A branded SRP email template
+•	The prototype artifact (link to hosted version or embedded images)
+•	A brief summary of the idea as captured by the AI
+•	A clear CTA: "Want to take this further? Book a call with our team."
+•	A link back to the conversation (if the client wants to continue)
+Stage 7: Follow-Up Sequence
+•	If email is opened but no action taken: Automated follow-up in 48 hours: "Did the concept match what you had in mind? Our team can refine it in a 30-minute call."
+•	If email is not opened after 3 days: Second follow-up with a different subject line.
+•	If email is opened and CTA clicked: Immediate notification to the assigned sales rep.
+•	If consultant was requested during conversation: Direct calendar link in the email, and sales rep is notified in real-time.
+Stage 8: Consultant Escalation
+At any point in the conversation, the client can ask to speak to a human. The AI should also proactively offer this when:
+•	The idea is complex enough that a prototype won't do it justice
+•	The client mentions budget, timeline pressure, or an existing team
+•	The client asks technical questions the AI can't confidently answer
+•	The lead scores as high-fit
+Escalation means: (a) the conversation transcript and lead data are packaged into a brief, (b) the brief is sent to the assigned consultant, (c) the client receives a calendar link.
+Stage 9: CRM/Sales Visibility
+Every interaction creates a lead record in the system (see Section 8). Sales reps can see:
+•	All active conversations
+•	Lead scores and statuses
+•	Conversation transcripts
+•	Generated prototypes
+•	Email engagement metrics
+•	A recommended next action
+________________________________________
+4. Conversation Design
+Agent Identity & Tone
+The AI agent speaks as a product strategist from SRP — not a generic chatbot. Suggested persona name: "SRP Advisor" (avoid giving it a human first name; it creates false expectations).
+Tone: Professional but warm. Direct, not salesy. Curious, not interrogating. The agent should feel like a senior consultant doing an intake call — asking smart questions, reflecting back what it hears, occasionally challenging vague statements.
+Example calibration:
+•	Too casual: "Hey! What's your app idea? 😊"
+•	Too formal: "Please describe your software requirements in detail."
+•	Right tone: "Welcome. I'm here to help you shape your software idea into something concrete. Let's start with the basics — what are you trying to build, and who is it for?"
+Goals
+1.	Understand the idea well enough to generate a useful prototype.
+2.	Capture structured data about the client and the opportunity.
+3.	Build trust by demonstrating competence through the quality of the questions asked.
+4.	Move the client toward a next step — either prototype delivery or human consultation.
+Boundaries
+•	The agent does NOT provide technical architecture advice beyond high-level ("you'd likely need a web app with a backend and database" is fine; "you should use PostgreSQL with a Redis cache layer" is too much).
+•	The agent does NOT estimate costs or timelines (this is a human consultant's job).
+•	The agent does NOT promise deliverables beyond the prototype.
+•	The agent does NOT continue open-ended conversation beyond 12–15 exchanges. After that, it must move to either contact capture or consultant escalation.
+•	The agent does NOT answer questions about SRP's pricing, team size, or internal processes in detail — it redirects to a call.
+Conversation Stages
+Stage 1: Opening (1 message) Agent introduces itself and asks the first question. The opening should be a single, open-ended question.
+"Welcome to Silk Road Professionals. I help turn rough software ideas into visual concepts you can see and share. Tell me — what are you thinking about building?"
+Stage 2: Idea Exploration (3–5 exchanges) The agent asks clarifying questions one at a time. It adapts based on what the client says. Key questions to cover (not necessarily in this order):
+•	What problem does this solve?
+•	Who are the primary users?
+•	Is this a new product or an improvement to something existing?
+•	Web, mobile, or both?
+•	What's the single most important thing this software should do?
+After each response, the agent briefly reflects back what it understood before asking the next question. This builds trust and catches misunderstandings early.
+Stage 3: Summary & Redirect (1–2 exchanges) The agent summarizes the idea in 3–4 sentences and asks the client to confirm or correct. This is the "mirror moment" — the client sees their own idea articulated clearly, often for the first time. This is where the perceived value is highest.
+"Here's what I'm hearing: You need a web-based dashboard for property managers to track maintenance requests, assign contractors, and see real-time status updates. The main pain point is that everything currently lives in email and spreadsheets. Is that right?"
+Stage 4: Contact Capture (1 exchange) After the summary is confirmed, the agent asks for email. Framing matters:
+"I can put together a visual concept of this — a clickable layout showing how the key screens might work. I'll send it to your email. What's the best address?"
+Stage 5: Optional Deepening (2–3 exchanges, only for high-signal leads) If the client provided email willingly and seems engaged, the agent can ask a few more optional questions while the prototype is being generated:
+•	Have you worked with a development team before?
+•	Is there a timeline driving this?
+•	Are there existing tools or systems this needs to connect to?
+These questions serve qualification more than prototype generation. They extract budget signals, urgency, and sophistication.
+Stage 6: Prototype Delivery & Close The agent tells the client the prototype is being generated and will arrive by email shortly. It offers the consultant escalation as a natural next step:
+"Your concept is on its way. If you'd like to explore this further — scope, timeline, technical approach — I can connect you with one of our consultants. Would that be helpful?"
+When the AI Stops Asking
+The AI should cap the conversation at approximately 12–15 exchanges total (both sides combined). After that:
+•	If contact info was captured: summarize and trigger prototype generation.
+•	If contact info was not captured: make one final attempt, then gracefully close with a link to the free consultation booking page.
+•	If the client is going off-topic repeatedly: redirect once, then offer to close.
+________________________________________
+5. Lead Qualification Logic
+Scoring Framework
+Use a weighted point system with four signal categories. Each lead gets a score from 0–100.
+Category 1: Business Signals (max 35 points)
+Signal	Points	How AI Detects It
+Mentions an existing company/business	+10	Named entity recognition, "we" vs "I" language
+Describes a revenue-generating use case	+10	Keywords: customers, clients, sales, operations, reduce cost
+Mentions existing users or processes	+8	References to current workflows, tools, pain points
+Side project or personal idea	+2	"I want to build", hobby language, no business context
+Student project or learning exercise	0	Academic context, "for a class", "learning"
+Category 2: Urgency & Intent Signals (max 25 points)
+Signal	Points	How AI Detects It
+Mentions a deadline or timeline	+10	"By Q3", "next month", "before launch"
+Asks about next steps, pricing, or process	+8	Direct interest in engagement
+Requests consultant	+7	Explicit ask for human help
+Exploratory only, no time pressure	+2	"Just thinking about", "someday"
+Category 3: Fit Signals (max 25 points)
+Signal	Points	How AI Detects It
+B2B or enterprise use case	+10	Industry keywords, multi-user, admin panels
+Web or mobile app (SRP's core)	+8	Platform mentions
+Integration with existing systems	+7	API, ERP, CRM, QuickBooks, Salesforce mentions
+Consumer/social app (low SRP fit)	+2	Social features, marketplace, consumer play
+Hardware, IoT, or non-software	0	Physical product focus
+Category 4: Engagement Quality (max 15 points)
+Signal	Points	How AI Detects It
+Provided real email (business domain)	+8	Email domain is a company, not Gmail/Yahoo
+Detailed, thoughtful responses	+4	Response length, specificity
+Provided company name and role	+3	Direct answer to company question
+Vague or single-word responses	+0	Low engagement signals
+Lead Segments
+Segment	Score Range	System Action
+High-fit	70–100	Immediate sales alert. Premium prototype. Priority follow-up within 24 hours.
+Medium-fit	40–69	Standard prototype delivery. Automated follow-up sequence. Weekly batch review by sales.
+Low-fit	15–39	Basic prototype. Automated nurture sequence only. No manual follow-up unless they re-engage.
+Not qualified	0–14	Minimal output (summary only, no prototype). No follow-up. Data stored for analytics.
+Detecting Sales Intent vs. Curiosity
+The strongest signal is specificity. A client who says "I need a dashboard that shows real-time inventory across three warehouses with role-based access" has intent. A client who says "I want to build an app" does not.
+Secondary signals: mentions of budget (even vague — "we have some budget for this"), mentions of stakeholders ("my CTO wants to see options"), and mentions of failed past attempts ("we tried building this internally but it didn't work").
+The AI should not ask "What's your budget?" directly — this feels salesy. Instead, it can ask "Have you allocated resources for this project, or are you still in the exploration phase?" This captures the same signal without the friction.
+________________________________________
+6. Prototype Output Strategy
+Output Type Decision Matrix
+The AI determines the output type based on what the client described. Here is the mapping:
+Type 1: Clickable Web Prototype (HTML/CSS)
+•	When to use: Client described a web application, dashboard, portal, or admin panel with identifiable screens.
+•	What it looks like: 3–5 static HTML screens with navigation between them. SRP-branded header. Placeholder data that matches the client's domain. Not functional — but clickable enough to feel real.
+•	How to generate (MVP): Use an LLM (Claude API) to generate HTML/CSS based on the conversation summary. Apply a standard SRP template shell. Host on a unique URL (e.g., preview.srpsoftware.com/abc123).
+•	Wow factor: High. Clients can click through screens and immediately see their idea in a tangible form.
+•	Realistic for MVP: Yes. HTML generation from LLMs is reliable. The template wrapper handles branding consistency.
+Type 2: Mobile App Wireframe
+•	When to use: Client described a mobile app (iOS, Android, or cross-platform).
+•	What it looks like: 4–6 screen mockups in a mobile frame. Shows key flows (onboarding, main screen, detail view, settings). Delivered as images or an interactive preview.
+•	How to generate (MVP): LLM generates screen descriptions → render as styled HTML in a mobile viewport frame, or generate SVG wireframes. For Phase 2, integrate with a tool like Figma API or a wireframing library.
+•	Wow factor: Medium-high. Mobile frames feel professional even as wireframes.
+•	Realistic for MVP: Yes, if using HTML-in-mobile-frame approach. Native Figma integration is Phase 2.
+Type 3: Process Flow Diagram
+•	When to use: Client described a workflow, approval process, multi-step operation, or system integration rather than a UI.
+•	What it looks like: A clean flowchart showing the process steps, decision points, and integrations. Mermaid diagram or SVG rendered to a polished image.
+•	How to generate: LLM generates Mermaid syntax from conversation → render to SVG/PNG with SRP branding.
+•	Wow factor: Medium. Less visually impressive than a clickable prototype, but highly valuable for enterprise clients who think in processes.
+•	Realistic for MVP: Yes. Mermaid rendering is trivial.
+Type 4: Dashboard Concept
+•	When to use: Client described analytics, reporting, KPI tracking, or data visualization needs.
+•	What it looks like: A single-page dashboard layout with charts, metrics cards, and tables populated with realistic sample data from the client's domain.
+•	How to generate: LLM generates a React or HTML dashboard using a charting library (Chart.js, Recharts). Populate with domain-appropriate sample data.
+•	Wow factor: Very high. Dashboards with real-looking data are extremely persuasive.
+•	Realistic for MVP: Yes. This is one of the highest-ROI output types.
+Type 5: Technical Concept Summary (PDF)
+•	When to use: The idea is too complex, too early-stage, or too backend-heavy for a visual prototype. Also used as a fallback when other types don't fit.
+•	What it looks like: A branded 2–3 page PDF with: idea summary, suggested architecture approach, key technical considerations, recommended technology stack, a rough feature priority list, and suggested next steps with SRP.
+•	How to generate: LLM generates structured content → render to PDF using a template.
+•	Wow factor: Medium-low visually, but high in perceived professional value. It shows SRP already "gets" the idea.
+•	Realistic for MVP: Yes. This should be the Phase 1 default output alongside one visual type.
+MVP Recommendation
+For Phase 1, support only two output types: Clickable Web Prototype and Technical Concept Summary. These cover the majority of inbound ideas (web apps and complex/vague ideas respectively) and are the fastest to build reliably.
+Add Mobile Wireframe and Dashboard Concept in Phase 2. Add Process Flow in Phase 3.
+________________________________________
+7. System Architecture Concept
+Components
+1. Frontend — Chat Interface
+•	Next.js page hosted on srpsoftware.com/idea (or similar)
+•	Embedded chat UI component (custom-built, not a third-party widget — SRP should own the experience)
+•	Handles the conversation, displays typing indicators, shows prototype loading state
+•	Mobile-responsive
+2. Chat Agent — AI Orchestration
+•	Backend service (Node.js or Python) that manages the conversation
+•	Uses Claude API (or equivalent) with a carefully engineered system prompt
+•	Maintains conversation state and context window
+•	Runs qualification scoring in real-time after each message
+•	Determines when to transition between conversation stages
+•	Decides which prototype type to generate
+3. Prototype Generator
+•	Receives a structured brief from the chat agent (idea summary, type, key features, domain)
+•	Calls an LLM to generate the artifact (HTML, Mermaid, PDF content)
+•	Applies SRP branding template
+•	For hosted prototypes: deploys to a preview URL
+•	For static artifacts: generates downloadable files
+•	Returns the artifact URL/attachment to the orchestration layer
+4. Lead Storage / CRM
+•	Database (PostgreSQL) storing all lead data, conversation transcripts, scores, and statuses
+•	For MVP: a simple admin dashboard for SRP's sales team to view leads
+•	For Phase 2: integration with an external CRM (HubSpot, Pipedrive, or whatever SRP uses)
+•	API endpoints for lead retrieval and status updates
+5. Email Delivery
+•	Transactional email service (SendGrid, Postmark, or Resend)
+•	Branded HTML email template
+•	Sends: prototype link, idea summary, CTA for consultation booking
+•	Tracks: opens, clicks, bounces
+•	Triggers follow-up sequences based on engagement
+6. Analytics
+•	Event tracking on: conversation starts, messages sent, email captured, prototype generated, email opened, CTA clicked, consultant requested, drop-offs by stage
+•	For MVP: simple event log in the database + a basic dashboard
+•	For Phase 2: integrate with Mixpanel, Amplitude, or PostHog
+7. Consultant Handoff
+•	When a consultant is requested, the system packages the conversation transcript, lead data, and qualification score into a brief
+•	Sends notification (email or Slack) to the assigned sales rep
+•	Includes a calendar booking link (Calendly or Cal.com integration)
+•	The consultant can see everything the AI discussed before the call
+Infrastructure (MVP)
+•	Hosting: Vercel (frontend) + Railway or Fly.io (backend services)
+•	Database: Supabase (PostgreSQL + auth + real-time)
+•	AI: Claude API via Anthropic
+•	Email: Resend or SendGrid
+•	Prototype hosting: Static files on Vercel or S3 + CloudFront with unique URLs
+•	Monitoring: Basic logging + uptime monitoring
+This is deliberately simple. No Kubernetes, no microservices, no over-engineering. SRP can run this on a $100/month infrastructure budget for the first 6 months.
+________________________________________
+8. Data Model / CRM Fields
+Lead Record
+Field	Type	Source	Notes
+id	UUID	System	Primary key
+created_at	Timestamp	System	When conversation started
+updated_at	Timestamp	System	Last activity
+status	Enum	System	See status values below
+email	String	Client input	Nullable (anonymous leads exist)
+name	String	Client input	Nullable
+company	String	Client input or AI-extracted	
+role_title	String	AI-extracted	
+phone	String	Client input	Optional
+country	String	IP geolocation	
+industry	String	AI-classified	From predefined list
+idea_summary	Text	AI-generated	3–5 sentence summary
+idea_raw	Text	Full transcript	Complete conversation log
+product_type	Enum	AI-classified	web_app, mobile_app, dashboard, integration, process, other
+primary_features	JSON array	AI-extracted	Top 3–5 features mentioned
+platform	Enum	AI-extracted	web, ios, android, cross_platform, desktop, unclear
+existing_systems	JSON array	AI-extracted	Systems to integrate with
+budget_signal	Enum	AI-inferred	no_signal, exploring, has_budget, ready_to_invest
+urgency_signal	Enum	AI-inferred	no_urgency, low, medium, high
+qualification_score	Integer (0–100)	System-calculated	
+qualification_segment	Enum	System-calculated	high_fit, medium_fit, low_fit, not_qualified
+prototype_type	Enum	System	clickable_web, mobile_wireframe, dashboard, process_flow, technical_summary, none
+prototype_url	String	System	Link to generated prototype
+prototype_generated_at	Timestamp	System	
+email_sent_at	Timestamp	System	
+email_opened	Boolean	Email tracking	
+email_opened_at	Timestamp	Email tracking	
+email_cta_clicked	Boolean	Email tracking	
+consultant_requested	Boolean	Client action	
+consultant_requested_at	Timestamp	Client action	
+assigned_consultant	String	System or manual	
+drop_off_stage	String	System	Which stage they left at
+drop_off_reason	String	AI-inferred	refused_email, went_silent, off_topic, disqualified
+conversation_message_count	Integer	System	Total messages exchanged
+conversation_duration_seconds	Integer	System	
+source	String	UTM params	How they found the page
+referrer_url	String	Browser	
+notes	Text	Manual	Sales team notes
+next_action	String	System or manual	Suggested next step
+converted	Boolean	Manual	Whether they became a paying client
+conversion_date	Timestamp	Manual	
+deal_value	Decimal	Manual	Revenue from this lead
+Status Values
+started → clarifying → contact_captured → generating_prototype → prototype_sent → follow_up_pending → consultant_requested → discovery_call_booked → converted
+Branch statuses: abandoned, unqualified, email_bounced, no_response, nurture_sequence
+________________________________________
+9. Suggested Boundaries and Guardrails
+What the AI Should Do
+•	Ask smart, specific questions — not generic intake form questions
+•	Summarize and reflect back the client's idea to demonstrate understanding
+•	Gently steer vague ideas toward something concrete
+•	Proactively suggest what type of output it can generate
+•	Offer consultant escalation when the idea is complex
+•	Collect email before generating any prototype
+•	Be honest about what it can and cannot do: "I can show you a visual concept, but detailed estimates require a conversation with our team"
+What the AI Should NOT Do
+•	Provide cost estimates or timelines (this is a human consultant's job and a major liability risk)
+•	Give detailed technical architecture recommendations
+•	Write code or pseudo-code for the client
+•	Answer questions about SRP's internal operations, team size, or pricing
+•	Continue an open-ended brainstorming session beyond 15 exchanges
+•	Generate prototypes without capturing at least an email address
+•	Engage with clearly abusive, nonsensical, or off-topic conversations beyond one redirect attempt
+•	Make promises about what SRP will deliver
+•	Discuss competitors or compare SRP to other agencies
+Chat Limits
+•	Hard cap: 20 messages from the client. After 20, the AI must close the conversation with a summary and next-step CTA.
+•	Soft cap: 12 messages. After 12, the AI begins steering toward contact capture and prototype generation.
+•	Idle timeout: If the client doesn't respond for 10 minutes, the AI sends a gentle nudge. After 30 minutes of silence, the conversation is marked as abandoned but the data is preserved.
+•	Repeat visitors: If the same email returns, the AI references the previous conversation. If the same anonymous session returns (cookie-based), the AI offers to continue where they left off.
+Anti-Abuse Measures
+•	Rate limit: max 3 conversations per IP per day
+•	Block disposable email domains (Mailinator, Guerrilla Mail, etc.)
+•	If the conversation is clearly not about software (joke prompts, testing the AI, off-topic discussions), the AI redirects once, then gracefully exits after the second off-topic message
+•	Content moderation on inputs to prevent injection attacks or inappropriate content
+•	No PII storage beyond what the client voluntarily provides
+When to Lock Deeper Output Behind a Consultant
+The AI should explicitly say: "For this type of project, a visual concept alone won't do justice to the complexity. I'd recommend a 30-minute call with one of our consultants who can walk through the technical approach with you." This should trigger when:
+•	The client describes a system with 5+ integrations
+•	The client mentions regulatory requirements (HIPAA, SOC 2, GDPR)
+•	The client describes a platform with multiple user roles and complex permissions
+•	The client mentions replacing an existing system with significant data migration
+•	The qualification score is 70+ (high-fit leads should get human attention quickly)
+________________________________________
+10. Best MVP Plan
+Phase 1: "Proof of Concept" (4–6 weeks)
+Goal: Launch the smallest thing that generates real leads and real prototypes.
+Build:
+•	Landing page with embedded chat interface (srpsoftware.com/idea)
+•	AI conversation agent using Claude API with a well-tuned system prompt
+•	Single prototype type: Technical Concept Summary (PDF) — this is the fastest to build reliably and works for any idea
+•	Email delivery with SRP-branded template
+•	Basic lead storage in a PostgreSQL database
+•	Simple admin panel for SRP team to view leads (table view with filters)
+•	Manual consultant handoff (AI suggests it, system sends a Slack/email notification to the sales team)
+Skip for now:
+•	Clickable HTML prototypes (add in Phase 1.5 after validating the flow)
+•	CRM integration
+•	Automated follow-up sequences
+•	Lead scoring (use manual review)
+•	Analytics beyond basic event logging
+Success metrics:
+•	50+ conversations in the first month
+•	30%+ email capture rate
+•	5+ qualified leads identified
+•	At least 1 conversion to a paid engagement
+Why start here: The highest-risk assumption is whether clients will actually engage with an AI chat about their idea. Phase 1 tests this with minimum investment. The PDF output is a safety net — it always works, it always looks professional, and it doesn't require complex generation logic.
+Phase 1.5: "Add the Wow" (2–3 weeks after Phase 1)
+Goal: Add the clickable web prototype to increase perceived value.
+Build:
+•	HTML prototype generator using Claude API + SRP template shell
+•	Hosted preview URLs for prototypes
+•	Prototype type selection logic (AI decides between PDF and clickable prototype)
+•	Basic qualification scoring (automated, based on the framework in Section 5)
+Phase 2: "Scale the Funnel" (6–8 weeks after Phase 1.5)
+Goal: Automate follow-ups, add more output types, integrate with sales tools.
+Build:
+•	Automated email follow-up sequences (3-email series)
+•	Email engagement tracking (opens, clicks)
+•	Dashboard concept output type
+•	Mobile wireframe output type
+•	CRM integration (HubSpot or Pipedrive)
+•	Improved admin dashboard with qualification scores, funnel visualization, and lead prioritization
+•	A/B testing on conversation prompts and email templates
+•	Consultant handoff with calendar integration (Cal.com or Calendly)
+Phase 3: "Optimize and Expand" (Ongoing)
+Goal: Improve conversion rates, add intelligence, reduce manual work.
+Build:
+•	Process flow diagram output type
+•	AI-generated follow-up messages personalized to each lead's conversation
+•	Predictive lead scoring based on historical conversion data
+•	Multi-language support (SRP serves international clients)
+•	Integration with SRP's proposal/contract workflow
+•	Conversation analytics: which questions correlate with higher conversion
+•	Feedback loop: track which prototypes led to actual deals and use that data to improve generation
+________________________________________
+11. Risks and Failure Modes
+Product Risks
+Risk: Clients take the prototype and disappear. The prototype gives them a visual they can shop around to other agencies. Mitigation: the prototype should be impressive but intentionally incomplete — it shows what the product could look like, not a finished spec. Include SRP branding throughout. Make the natural next step (Product Foundation, $1,500) feel like the obvious continuation.
+Risk: Prototype quality is inconsistent. LLMs generate variable output. Some prototypes will be great; some will be mediocre. Mitigation: use a strong template system so the branding and structure are always consistent, even if the content varies. For high-score leads, add a manual review step before sending.
+Risk: The AI conversation feels robotic or annoying. If the questions are too scripted or the flow too rigid, clients will bounce. Mitigation: invest heavily in the system prompt. Test with real people. Use branching logic, not a fixed question list. Let the AI adapt.
+UX Risks
+Risk: Clients don't want to chat — they want a form. Some people hate chatbots. Mitigation: offer a form alternative ("Prefer to write it out? Fill in this brief instead"). The form should capture the same fields and feed into the same pipeline.
+Risk: Contact capture feels like a paywall. Asking for email before showing the prototype can feel transactional. Mitigation: the AI should earn the right to ask by providing value first (the summary mirror moment). Frame it as delivery logistics, not data capture: "I'll send this to your inbox so you have it."
+AI Risks
+Risk: Prompt injection or misuse. Someone could try to get the AI to reveal its system prompt, say something off-brand, or generate harmful content. Mitigation: strict system prompt boundaries, input sanitization, content moderation on both inputs and outputs.
+Risk: Hallucination in technical recommendations. The AI might suggest technologies or approaches that don't make sense. Mitigation: the AI should never make specific technical recommendations. Its role is to capture and shape the idea, not architect the solution.
+Risk: Over-promising. The AI might imply SRP can build anything in any timeline. Mitigation: explicit instructions in the system prompt to never make promises about cost, timeline, or scope.
+Technical Risks
+Risk: Prototype generation takes too long. If the client is waiting 5+ minutes, they'll leave. Mitigation: start with PDF generation (fast) and only add more complex types when the pipeline is proven reliable. Set client expectations: "This will take about a minute."
+Risk: AI API costs scale unexpectedly. A popular chatbot could generate significant API costs. Mitigation: message caps, rate limiting, and using cheaper models for classification/scoring while reserving the best models for prototype generation.
+Sales Risks
+Risk: Sales team ignores the leads. If the sales team doesn't have a process for reviewing AI-generated leads, the tool is wasted. Mitigation: build alerts into existing channels (Slack, email). Assign clear ownership. Track follow-up response times.
+Risk: Too many low-quality leads. If the tool attracts tire-kickers, the sales team drowns in noise. Mitigation: aggressive qualification scoring. Only alert sales for high-fit leads. Let low-fit leads self-serve through automated sequences.
+________________________________________
+12. Strong Recommendations
+1. Start with the PDF, not the clickable prototype.
+Your instinct will be to lead with the clickable prototype because it's more impressive. Resist this. The clickable prototype is the hardest to make consistently good, and a bad one damages your brand more than no prototype at all. Start with a beautifully formatted Technical Concept Summary PDF. Get the conversation flow and lead capture working perfectly. Then add the clickable prototype when you've proven the funnel converts.
+2. This product is a sales tool, not a product tool. Treat it that way.
+The danger is over-investing in the AI and prototype generation while under-investing in the sales handoff. The prototype doesn't close deals — your sales team does. The AI's job is to capture information and create a reason for the client to take the next step. Spend 60% of your effort on the conversation design and lead qualification, 20% on the prototype, and 20% on the sales workflow.
+3. The conversation summary is more valuable than the prototype.
+When a potential client sees their own vague idea articulated clearly in 3–5 sentences — with the right technical framing, prioritized features, and a realistic scope — that moment of "yes, they get it" is what builds trust. The prototype is proof that SRP can execute. But the summary is proof that SRP understands. Lead with understanding.
+4. Gate the prototype behind email, but don't gate the conversation.
+Let anyone start chatting immediately. No sign-up, no form, no friction. The conversation itself is the hook. Only ask for email when you've earned it — after the summary mirror moment. This maximizes the number of people who engage and gives the AI the best chance to demonstrate value.
+5. Connect this directly to Product Foundation.
+Your Product Foundation service ($1,500, 7 days) is the perfect next step after this tool. The AI-generated prototype is the "AI prototype" that Product Foundation takes and turns into a real product architecture. Make this connection explicit in the email: "Like what you see? Our Product Foundation takes this concept and turns it into a deployable architecture in 7 days."
+6. Don't build a CRM. Use one.
+For Phase 1, a simple database table is fine. But by Phase 2, integrate with HubSpot (free tier) or Pipedrive. Building your own CRM is a trap. Your sales team needs to live in a tool they already know, not learn a custom admin panel.
+7. Your current idea is the right idea, but the scope is too wide for launch.
+You listed 7+ prototype types, a full CRM, analytics, automated sequences, and consultant handoff. That's 4–6 months of work. Cut it to the bone for launch: chat + one output type + email + lead table. Everything else is Phase 2 or later. The most important thing is to get real clients talking to the AI within 6 weeks. Every week of delay is a week of leads you're not capturing.
+8. Add a form-based alternative entry point.
+Not everyone wants to chat. Offer a structured form ("Tell us your idea in 5 fields") that feeds into the same pipeline. The AI can still process the form input and generate a prototype. This captures a different personality type and doubles your entry points.
+9. Track one metric obsessively: email capture rate.
+Of every 100 people who start a conversation, how many give you their email? This is the single number that determines whether the product works. If it's below 20%, the conversation isn't providing enough value. If it's above 40%, you're doing something right. Optimize for this before anything else.
+10. Run this tool on your own clients first.
+Before launching it publicly, use it internally. Have your existing clients or warm contacts try it. Watch what questions they ask. See where they get confused. Read the transcripts. Fix the obvious problems. Then launch to cold traffic.
+________________________________________
