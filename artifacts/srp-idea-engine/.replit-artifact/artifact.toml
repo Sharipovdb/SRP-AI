@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "SRP AI Idea Engine"
+version = "1.0.0"
+id = "artifacts/srp-idea-engine"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22111
+
+[services.development]
+run = "pnpm --filter @workspace/srp-idea-engine run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/srp-idea-engine", "run", "build" ]
+publicDir = "artifacts/srp-idea-engine/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22111"
+BASE_PATH = "/"

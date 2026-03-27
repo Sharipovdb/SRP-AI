@@ -3,13 +3,21 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API specification for SRP AI Idea-to-MVP Engine
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: anthropic
+    description: Anthropic AI chat operations
+  - name: leads
+    description: Lead management operations
+  - name: conversations
+    description: Conversation operations
+  - name: prototypes
+    description: Prototype generation and retrieval
 paths:
   /healthz:
     get:
@@ -24,6 +32,408 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /conversations:
+    post:
+      operationId: startConversation
+      tags: [conversations]
+      summary: Start a new lead conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartConversationBody"
+      responses:
+        "201":
+          description: Conversation started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationSession"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /conversations/{sessionId}:
+    get:
+      operationId: getConversation
+      tags: [conversations]
+      summary: Get a conversation session with messages
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Conversation with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationWithMessages"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /conversations/{sessionId}/messages:
+    post:
+      operationId: sendMessage
+      tags: [conversations]
+      summary: Send a user message and get AI response (SSE stream)
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageBody"
+      responses:
+        "200":
+          description: SSE stream of assistant response chunks
+          content:
+            text/event-stream: {}
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /conversations/{sessionId}/contact:
+    post:
+      operationId: captureContact
+      tags: [conversations]
+      summary: Capture contact information from a conversation
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptureContactBody"
+      responses:
+        "200":
+          description: Contact captured and prototype generation triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactCaptureResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /conversations/{sessionId}/score:
+    get:
+      operationId: getLeadScore
+      tags: [conversations]
+      summary: Get the current qualification score for a conversation
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lead score
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadScore"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /prototypes/{id}:
+    get:
+      operationId: getPrototype
+      tags: [prototypes]
+      summary: Get a generated prototype by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Prototype details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Prototype"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /prototypes/{id}/generate:
+    post:
+      operationId: generatePrototype
+      tags: [prototypes]
+      summary: Trigger prototype generation for a lead
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Prototype generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Prototype"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /leads:
+    get:
+      operationId: listLeads
+      tags: [leads]
+      summary: List all leads (admin)
+      parameters:
+        - name: segment
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of leads
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadListResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /leads/{id}:
+    get:
+      operationId: getLead
+      tags: [leads]
+      summary: Get a single lead with full details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lead details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateLead
+      tags: [leads]
+      summary: Update a lead (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLeadBody"
+      responses:
+        "200":
+          description: Updated lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /anthropic/conversations:
+    get:
+      operationId: listAnthropicConversations
+      tags: [anthropic]
+      summary: List all conversations
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AnthropicConversation"
+    post:
+      operationId: createAnthropicConversation
+      tags: [anthropic]
+      summary: Create a new conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAnthropicConversationBody"
+      responses:
+        "201":
+          description: Created conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnthropicConversation"
+
+  /anthropic/conversations/{id}:
+    get:
+      operationId: getAnthropicConversation
+      tags: [anthropic]
+      summary: Get conversation with messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Conversation with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnthropicConversationWithMessages"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnthropicError"
+    delete:
+      operationId: deleteAnthropicConversation
+      tags: [anthropic]
+      summary: Delete a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnthropicError"
+
+  /anthropic/conversations/{id}/messages:
+    get:
+      operationId: listAnthropicMessages
+      tags: [anthropic]
+      summary: List messages in a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AnthropicMessage"
+    post:
+      operationId: sendAnthropicMessage
+      tags: [anthropic]
+      summary: Send a message and receive an AI response (SSE stream)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendAnthropicMessageBody"
+      responses:
+        "200":
+          description: SSE stream of assistant response chunks
+          content:
+            text/event-stream: {}
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +444,426 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    StartConversationBody:
+      type: object
+      properties:
+        source:
+          type: string
+        referrerUrl:
+          type: string
+      required: []
+
+    ConversationSession:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        leadId:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        initialMessage:
+          type: string
+      required:
+        - sessionId
+        - leadId
+        - status
+        - createdAt
+        - initialMessage
+
+    ConversationMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        role:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - role
+        - content
+        - createdAt
+
+    ConversationWithMessages:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        leadId:
+          type: string
+        status:
+          type: string
+        messageCount:
+          type: integer
+        emailCaptured:
+          type: boolean
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConversationMessage"
+      required:
+        - sessionId
+        - leadId
+        - status
+        - messageCount
+        - emailCaptured
+        - messages
+
+    SendMessageBody:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+        - content
+
+    CaptureContactBody:
+      type: object
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+        company:
+          type: string
+      required:
+        - email
+
+    ContactCaptureResult:
+      type: object
+      properties:
+        leadId:
+          type: string
+        email:
+          type: string
+        prototypeId:
+          type: ["string", "null"]
+        qualificationScore:
+          type: integer
+        segment:
+          type: string
+        message:
+          type: string
+      required:
+        - leadId
+        - email
+        - prototypeId
+        - qualificationScore
+        - segment
+        - message
+
+    LeadScore:
+      type: object
+      properties:
+        score:
+          type: integer
+        segment:
+          type: string
+        businessSignals:
+          type: integer
+        urgencySignals:
+          type: integer
+        fitSignals:
+          type: integer
+        engagementQuality:
+          type: integer
+      required:
+        - score
+        - segment
+        - businessSignals
+        - urgencySignals
+        - fitSignals
+        - engagementQuality
+
+    Prototype:
+      type: object
+      properties:
+        id:
+          type: string
+        leadId:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+        htmlContent:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - leadId
+        - type
+        - status
+        - htmlContent
+        - createdAt
+
+    Lead:
+      type: object
+      properties:
+        id:
+          type: string
+        sessionId:
+          type: string
+        email:
+          type: ["string", "null"]
+        name:
+          type: ["string", "null"]
+        company:
+          type: ["string", "null"]
+        status:
+          type: string
+        qualificationScore:
+          type: ["integer", "null"]
+        qualificationSegment:
+          type: ["string", "null"]
+        ideaSummary:
+          type: ["string", "null"]
+        productType:
+          type: ["string", "null"]
+        platform:
+          type: ["string", "null"]
+        prototypeType:
+          type: ["string", "null"]
+        prototypeUrl:
+          type: ["string", "null"]
+        consultantRequested:
+          type: boolean
+        conversationMessageCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - sessionId
+        - status
+        - consultantRequested
+        - conversationMessageCount
+        - createdAt
+        - updatedAt
+
+    LeadDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        sessionId:
+          type: string
+        email:
+          type: ["string", "null"]
+        name:
+          type: ["string", "null"]
+        company:
+          type: ["string", "null"]
+        roleTitle:
+          type: ["string", "null"]
+        status:
+          type: string
+        qualificationScore:
+          type: ["integer", "null"]
+        qualificationSegment:
+          type: ["string", "null"]
+        ideaSummary:
+          type: ["string", "null"]
+        ideaRaw:
+          type: ["string", "null"]
+        productType:
+          type: ["string", "null"]
+        platform:
+          type: ["string", "null"]
+        primaryFeatures:
+          type: ["array", "null"]
+          items:
+            type: string
+        existingSystems:
+          type: ["array", "null"]
+          items:
+            type: string
+        budgetSignal:
+          type: ["string", "null"]
+        urgencySignal:
+          type: ["string", "null"]
+        prototypeType:
+          type: ["string", "null"]
+        prototypeUrl:
+          type: ["string", "null"]
+        prototypeGeneratedAt:
+          type: ["string", "null"]
+          format: date-time
+        consultantRequested:
+          type: boolean
+        dropOffStage:
+          type: ["string", "null"]
+        conversationMessageCount:
+          type: integer
+        source:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        nextAction:
+          type: ["string", "null"]
+        converted:
+          type: boolean
+        dealValue:
+          type: ["number", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConversationMessage"
+        prototype:
+          anyOf:
+            - $ref: "#/components/schemas/Prototype"
+            - type: "null"
+      required:
+        - id
+        - sessionId
+        - status
+        - consultantRequested
+        - conversationMessageCount
+        - converted
+        - createdAt
+        - updatedAt
+        - messages
+
+    LeadListResponse:
+      type: object
+      properties:
+        leads:
+          type: array
+          items:
+            $ref: "#/components/schemas/Lead"
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+      required:
+        - leads
+        - total
+        - limit
+        - offset
+
+    UpdateLeadBody:
+      type: object
+      properties:
+        status:
+          type: string
+        notes:
+          type: string
+        nextAction:
+          type: string
+        converted:
+          type: boolean
+        dealValue:
+          type: number
+        assignedConsultant:
+          type: string
+      required: []
+
+    AnthropicConversation:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - createdAt
+
+    AnthropicMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        conversationId:
+          type: integer
+        role:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - conversationId
+        - role
+        - content
+        - createdAt
+
+    CreateAnthropicConversationBody:
+      type: object
+      properties:
+        title:
+          type: string
+      required:
+        - title
+
+    SendAnthropicMessageBody:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+        - content
+
+    AnthropicConversationWithMessages:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnthropicMessage"
+      required:
+        - id
+        - title
+        - createdAt
+        - messages
+
+    AnthropicError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

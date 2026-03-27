@@ -1,0 +1,19 @@
+packages:
+  "framer-motion": "For page transitions, chat bubble animations, and loading states"
+  "date-fns": "For human-readable date formatting in the admin dashboard"
+  "react-markdown": "To render the AI's markdown responses safely in the chat UI"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility for merging tailwind classes without conflicts"
+
+images:
+  - path: "artifacts/srp-idea-engine/public/images/hero-bg.png"
+    description: "Abstract dark navy and slate geometric mesh background with very subtle amber gold glowing light leaks, professional corporate technology feel, enterprise software vibe"
+    aspect_ratio: "16:9"
+  - path: "artifacts/srp-idea-engine/public/images/logo.png"
+    description: "Minimalist geometric corporate logo mark for a company called SRP, deep blue and amber gold intersecting shapes, sharp professional look, transparent background"
+    aspect_ratio: "1:1"
+
+notes:
+  - "The admin dashboard requires ?token=srp-admin-2024 as a URL parameter to view"
+  - "The chat messages use a custom hook with standard fetch + ReadableStream to parse Server-Sent Events (SSE), bypassing React Query for that specific endpoint due to streaming limitations"
+  - "Session IDs are persisted in localStorage to resume conversations across reloads"
